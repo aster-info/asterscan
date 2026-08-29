@@ -3,11 +3,11 @@ function doGet(e) {
     var codeScanne = e.parameter.code ? e.parameter.code.trim() : ""; 
     var actionDemandee = e.parameter.action ? e.parameter.action.trim() : "entree"; 
     var ss = SpreadsheetApp.openById("1flkqIRxsCWFnwSPbdNtR5-zmXmqh70hhJwOIFQwSKrQ");
+    
     var sheet = ss.getSheetByName("membres"); 
     
     if (!sheet) {
-      return ContentService.createTextOutput(JSON.stringify({"status": "unknown", "error": "Onglet 'membres' introuvable"}))
-             .setMimeType(ContentService.MimeType.JSON);
+      return reponseJSON({"status": "unknown", "error": "Onglet 'membres' introuvable"});
     }
     
     var data = sheet.getDataRange().getValues();
@@ -18,23 +18,59 @@ function doGet(e) {
       
       if (idUniqueTableau.toLowerCase() === codeScanne.toLowerCase()) { 
         var nomMembre = (data[i][1] || "") + " " + (data[i][2] || ""); // Nom (B) et Prénom (C)
-        var statutActuel = data[i][5] !== null && data[i][5] !== undefined ? String(data[i][5]).trim().toLowerCase() : ""; // Colonne F (STATUT)
+        
+        var statutBrut = data[i][5] !== null && data[i][5] !== undefined ? String(data[i][5]).trim() : "";
+        var statutActuel = statutBrut.toLowerCase();
+        try {
+          statutActuel = statutActuel.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        } catch (err) {}
+        
         var ligneActuelle = i + 1;
         var heureActuelle = Utilities.formatDate(new Date(), "Europe/Paris", "HH:mm:ss");
 
         // Gestion de la SORTIE
         if (actionDemandee === "sortie") {
-          if (statutActuel === "présent") {
-            sheet.getRange(ligneActuelle, 6).setValue("Sorti"); // Colonne F
-            sheet.getRange(ligneActuelle, 9).setValue(heureActuelle); // Colonne I (Sortie)
-            resultat = {"status": "ok", "action": "sortie", "name": nomMembre};
+          if (statutActuel === "present" || statutActuel === "présent") {
+            
+            var sheetEnquete = ss.getSheetByName("enquete");
+            var aRepondu = false;
+            
+            if (sheetEnquete && sheetEnquete.getLastRow() > 1) {
+              var dataEnquete = sheetEnquete.getDataRange().getValues();
+              for (var j = 1; j < dataEnquete.length; j++) {
+                for (var c = 0; c < dataEnquete[j].length; c++) {
+                  if (String(dataEnquete[j][c]).trim().toLowerCase() === codeScanne.toLowerCase()) {
+                    aRepondu = true;
+                    break;
+                  }
+                }
+                if (aRepondu) break;
+              }
+            }
+            
+            if (!aRepondu) {
+              var idFormulaire = "1FAIpQLSfrSZ4xa4iJubIq_xskD34HUfUoLUqPW3AjQ2bVkmn7B1Rztg";
+              var lienEnquete = "https://docs.google.com/forms/d/e/" + idFormulaire + "/viewform?entry.1750101212=" + encodeURIComponent(codeScanne);
+              
+              resultat = {
+                "status": "enquete_requise",
+                "name": nomMembre,
+                "url": lienEnquete,
+                "message": "Veuillez remplir l'enquête de satisfaction avant de sortir."
+              };
+            } else {
+              sheet.getRange(ligneActuelle, 6).setValue("Sorti"); // Colonne F
+              sheet.getRange(ligneActuelle, 9).setValue(heureActuelle); // Colonne I (Sortie)
+              resultat = {"status": "ok", "action": "sortie", "name": nomMembre};
+            }
+            
           } else {
             resultat = {"status": "sortie_impossible", "name": nomMembre};
           }
         } 
         // Gestion de l'ENTRÉE
         else {
-          if (statutActuel === "présent" || statutActuel === "sorti") {
+          if (statutActuel === "present" || statutActuel === "présent" || statutActuel === "sorti") {
             resultat = {"status": "already_entered", "name": nomMembre};
           } else {
             sheet.getRange(ligneActuelle, 6).setValue("Présent"); // Colonne F
@@ -46,11 +82,14 @@ function doGet(e) {
       }
     }
     
-    return ContentService.createTextOutput(JSON.stringify(resultat))
-             .setMimeType(ContentService.MimeType.JSON);
-             
+    return reponseJSON(resultat);
+         
   } catch (error) {
-    return ContentService.createTextOutput(JSON.stringify({"status": "unknown", "error": error.toString()}))
-             .setMimeType(ContentService.MimeType.JSON);
+    return reponseJSON({"status": "unknown", "error": error.toString()});
   }
+}
+
+function reponseJSON(objet) {
+  return ContentService.createTextOutput(JSON.stringify(objet))
+         .setMimeType(ContentService.MimeType.JSON);
 }
