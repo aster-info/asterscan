@@ -1,0 +1,56 @@
+function doGet(e) {
+  try {
+    var codeScanne = e.parameter.code ? e.parameter.code.trim() : ""; 
+    var actionDemandee = e.parameter.action ? e.parameter.action.trim() : "entree"; 
+    var ss = SpreadsheetApp.openById("1flkqIRxsCWFnwSPbdNtR5-zmXmqh70hhJwOIFQwSKrQ");
+    var sheet = ss.getSheetByName("membres"); 
+    
+    if (!sheet) {
+      return ContentService.createTextOutput(JSON.stringify({"status": "unknown", "error": "Onglet 'membres' introuvable"}))
+             .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    var data = sheet.getDataRange().getValues();
+    var resultat = {"status": "unknown"};
+
+    for (var i = 1; i < data.length; i++) {
+      var idUniqueTableau = data[i][4] !== null && data[i][4] !== undefined ? String(data[i][4]).trim() : ""; // Colonne E (ID-UNIQUE)
+      
+      if (idUniqueTableau.toLowerCase() === codeScanne.toLowerCase()) { 
+        var nomMembre = (data[i][1] || "") + " " + (data[i][2] || ""); // Nom (B) et Prénom (C)
+        var statutActuel = data[i][5] !== null && data[i][5] !== undefined ? String(data[i][5]).trim().toLowerCase() : ""; // Colonne F (STATUT)
+        var ligneActuelle = i + 1;
+        var heureActuelle = Utilities.formatDate(new Date(), "Europe/Paris", "HH:mm:ss");
+
+        // Gestion de la SORTIE
+        if (actionDemandee === "sortie") {
+          if (statutActuel === "présent") {
+            sheet.getRange(ligneActuelle, 6).setValue("Sorti"); // Colonne F
+            sheet.getRange(ligneActuelle, 9).setValue(heureActuelle); // Colonne I (Sortie)
+            resultat = {"status": "ok", "action": "sortie", "name": nomMembre};
+          } else {
+            resultat = {"status": "sortie_impossible", "name": nomMembre};
+          }
+        } 
+        // Gestion de l'ENTRÉE
+        else {
+          if (statutActuel === "présent" || statutActuel === "sorti") {
+            resultat = {"status": "already_entered", "name": nomMembre};
+          } else {
+            sheet.getRange(ligneActuelle, 6).setValue("Présent"); // Colonne F
+            sheet.getRange(ligneActuelle, 8).setValue(heureActuelle); // Colonne H (Arrivée)
+            resultat = {"status": "ok", "action": "entree", "name": nomMembre};
+          }
+        }
+        break;
+      }
+    }
+    
+    return ContentService.createTextOutput(JSON.stringify(resultat))
+             .setMimeType(ContentService.MimeType.JSON);
+             
+  } catch (error) {
+    return ContentService.createTextOutput(JSON.stringify({"status": "unknown", "error": error.toString()}))
+             .setMimeType(ContentService.MimeType.JSON);
+  }
+}
