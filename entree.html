@@ -62,7 +62,7 @@
             background-color: #ef4444; /* Rouge pour les erreurs techniques */
         }
         .warning-bg {
-            background-color: #f97316; /* Orange pour "déjà présent" */
+            background-color: #f97316; /* Orange vif et bien voyant */
             color: white;
         }
         .loading-bg {
@@ -131,7 +131,7 @@
                         msgBox.className = "status-box success-bg";
                         msgBox.innerHTML = `✓ ENTRÉE VALIDÉE<br><span style="font-size: 18px; font-weight: bold;">${data.name}</span><br><small>ID : ${memberId}</small>`;
                     } else {
-                        // S'affiche en orange pour les membres déjà présents
+                        // S'affiche en orange vif avec l'icône d'avertissement
                         msgBox.className = "status-box warning-bg";
                         msgBox.innerHTML = `⚠️ ${data.error || "Erreur lors du contrôle."}`;
                     }
@@ -144,7 +144,7 @@
                 })
                 .catch(error => {
                     msgBox.className = "status-box error-bg";
-                    msgBox.innerHTML = "Erreur de connexion au serveur.";
+                    msgBox.innerHTML = "❌ Erreur de connexion au serveur.";
                     const btn = document.createElement('button');
                     btn.className = "btn btn-blue";
                     btn.innerText = "Réessayer";
