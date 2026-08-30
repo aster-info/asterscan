@@ -56,7 +56,7 @@
             display: none;
         }
         .success-bg {
-            background-color: #28a745; /* Vert élégant pour l'entrée validée */
+            background-color: #10b981; /* Vert vif et opaque identique au style turquoise */
         }
         .error-bg {
             background-color: #ef4444; /* Rouge pour les erreurs */
@@ -117,7 +117,6 @@
             msgBox.style.display = "block";
             msgBox.innerHTML = "Vérification de l'entrée en cours...";
 
-            // Appel au script Google Apps avec l'action 'entree'
             fetch(`${scriptUrl}?code=${encodeURIComponent(memberId)}&action=entree`)
                 .then(response => response.json())
                 .then(data => {
