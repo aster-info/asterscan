@@ -56,10 +56,14 @@
             display: none;
         }
         .success-bg {
-            background-color: #10b981; /* Vert vif et opaque identique au style turquoise */
+            background-color: #10b981; /* Vert vif */
         }
         .error-bg {
-            background-color: #ef4444; /* Rouge pour les erreurs */
+            background-color: #ef4444; /* Rouge pour les erreurs techniques */
+        }
+        .warning-bg {
+            background-color: #f97316; /* Orange pour "déjà présent" */
+            color: white;
         }
         .loading-bg {
             background-color: #6b7280; /* Gris chargement */
@@ -126,23 +130,17 @@
                     if (data.status === "ok") {
                         msgBox.className = "status-box success-bg";
                         msgBox.innerHTML = `✓ ENTRÉE VALIDÉE<br><span style="font-size: 18px; font-weight: bold;">${data.name}</span><br><small>ID : ${memberId}</small>`;
-                        
-                        const btn = document.createElement('button');
-                        btn.className = "btn btn-blue";
-                        btn.innerText = "Scanner un autre";
-                        btn.onclick = () => location.href = "entree.html";
-                        actionArea.appendChild(btn);
-
                     } else {
-                        msgBox.className = "status-box error-bg";
-                        msgBox.innerHTML = `❌ Erreur : ${data.error || "Membre introuvable."}`;
-                        
-                        const btn = document.createElement('button');
-                        btn.className = "btn btn-blue";
-                        btn.innerText = "Réessayer";
-                        btn.onclick = () => location.href = "entree.html";
-                        actionArea.appendChild(btn);
+                        // S'affiche en orange pour les membres déjà présents
+                        msgBox.className = "status-box warning-bg";
+                        msgBox.innerHTML = `⚠️ ${data.error || "Erreur lors du contrôle."}`;
                     }
+
+                    const btn = document.createElement('button');
+                    btn.className = "btn btn-blue";
+                    btn.innerText = "Scanner un autre";
+                    btn.onclick = () => location.href = "entree.html";
+                    actionArea.appendChild(btn);
                 })
                 .catch(error => {
                     msgBox.className = "status-box error-bg";
