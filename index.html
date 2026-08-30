@@ -35,13 +35,12 @@
     <div id="reader"></div>
 
     <script>
-        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxr2945zVbehDI2yAH2YgSsHA2BOCM8r3whjyL2zFYuMOrJjhIm7e_9NWNkc0QARwQ/execc";
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxr2945zVbehDI2yAH2YgSsHA2BOCM8r3whjyL2zFYuMOrJjhIm7e_9NWNkc0QARwQ/exec";
         let html5QrCode;
 
         function surScanReussi(decodedText) {
             html5QrCode.stop().then(() => {
                 let id = decodedText;
-                
                 try {
                     if (decodedText.includes('?')) {
                         const urlObj = new URL(decodedText);
@@ -51,9 +50,8 @@
                     // Garde le texte brut si ce n'est pas une URL
                 }
 
-                // Redirige directement vers la page HTML générée par Google Apps Script
-                window.location.href = `${WEB_APP_URL}?id=${encodeURIComponent(id)}&action=entree`;
-                
+                // CORRECTION : On envoie bien ?code=... pour correspondre à ton Apps Script
+                window.location.href = `${WEB_APP_URL}?code=${encodeURIComponent(id)}&action=entree`;
             }).catch(err => console.error(err));
         }
 
