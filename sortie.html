@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Contrôle de Sortie - ASTER</title>
+    <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -13,58 +14,69 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
             box-sizing: border-box;
         }
         .card {
             background: white;
-            padding: 40px 30px;
+            padding: 30px 20px;
             border-radius: 16px;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
             text-align: center;
             max-width: 450px;
             width: 100%;
-            margin: auto;
         }
         .logo {
-            max-width: 140px;
+            max-width: 130px;
             height: auto;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
         }
         h3 {
             color: #2c3e50;
             margin-top: 0;
-            margin-bottom: 25px;
+            margin-bottom: 15px;
             font-size: 20px;
             font-weight: 700;
         }
+        #reader {
+            width: 100%;
+            max-width: 350px;
+            margin: 0 auto 15px auto;
+            border-radius: 10px;
+            overflow: hidden;
+        }
         .status {
             font-weight: 500;
-            padding: 20px 15px;
+            padding: 15px;
             border-radius: 8px;
-            margin-bottom: 25px;
+            margin-bottom: 20px;
             font-size: 15px;
             line-height: 1.5;
+            display: none;
         }
         .success {
             background-color: #f0fdf4;
             color: #166534;
             border: 1px solid #bbf7d0;
+            display: block;
         }
         .error {
             background-color: #fef2f2;
             color: #b91c1c;
             border: 1px solid #fecaca;
+            display: block;
         }
         .warning {
             background-color: #f97316;
             color: white;
             font-weight: 600;
+            display: block;
         }
         .loading {
             color: #6b7280;
             background-color: #f3f4f6;
             border: 1px solid #e5e7eb;
+            display: block;
         }
         .btn {
             display: inline-block;
@@ -75,7 +87,7 @@
             border-radius: 8px;
             border: none;
             cursor: pointer;
-            margin-top: 5px;
+            margin-top: 10px;
         }
         .btn-survey {
             background-color: #16a34a;
@@ -91,7 +103,7 @@
         .btn-reset:hover {
             background-color: #2563eb;
         }
-        #action-area {
+        #result-container {
             display: none;
         }
     </style>
@@ -101,65 +113,103 @@
     <div class="card">
         <img src="logo.png" alt="Logo ASTER" class="logo">
         <h3>Contrôle des Sorties</h3>
-        <div id="message" class="status loading">Vérification de la sortie en cours...</div>
-        <div id="action-area">
-            <button id="action-btn" class="btn">Action</button>
+
+        <!-- Étape 1 : Le Scanner Caméra (affiché par défaut) -->
+        <div id="scanner-container">
+            <div id="reader"></div>
+            <p style="font-size: 14px; color: #666;">Scannez le badge du membre pour valider la sortie</p>
+        </div>
+
+        <!-- Étape 2 : Le Résultat du Scan (masqué au départ, s'affiche après lecture) -->
+        <div id="result-container">
+            <div id="message" class="status"></div>
+            <div id="action-area">
+                <button id="action-btn" class="btn">Action</button>
+            </div>
         </div>
     </div>
 
     <script>
-        const urlParams = new URLSearchParams(window.location.search);
-        const memberId = urlParams.get('code') || urlParams.get('id');
-        const messageDiv = document.getElementById('message');
-        const actionArea = document.getElementById('action-area');
-        const actionBtn = document.getElementById('action-btn');
+        let html5QrCode;
         const scriptUrl = "https://script.google.com/macros/s/AKfycbxr2945zVbehDI2yAH2YgSsHA2BOCM8r3whjyL2zFYuMOrJjhIm7e_9NWNkc0QARwQ/exec";
 
-        if (!memberId) {
-            afficherMessage("Erreur : Aucun identifiant trouvé dans le lien.", "error");
-            afficherBouton("Retour", "btn-reset", "index.html");
-        } else {
-            fetch(`${scriptUrl}?code=${encodeURIComponent(memberId)}&action=sortie`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === "ok") {
-                        afficherMessage(`Au revoir ${data.name} ! Votre sortie a été enregistrée.`, "success");
-                        afficherBouton("Scanner un autre badge", "btn-reset", "index.html");
-                    } else if (data.status === "enquete_requise") {
-                        afficherMessage(`📄 <strong>ENQUÊTE REQUISE</strong><br>${data.name} : Veuillez remplir l'enquête de satisfaction avant de sortir.<br><small>ID : ${memberId}</small>`, "warning");
-                        afficherBouton("Remplir l'enquête", "btn-survey", data.url, true);
-                    } else if (data.status === "sortie_impossible") {
-                        afficherMessage(`Attention ${data.name}, votre sortie est impossible (vous n'êtes pas marqué comme présent).`, "error");
-                        afficherBouton("Retour", "btn-reset", "index.html");
-                    } else {
-                        afficherMessage("Erreur : " + (data.error || "Membre inconnu ou introuvable."), "error");
-                        afficherBouton("Retour", "btn-reset", "index.html");
+        function demarrerCamera() {
+            html5QrCode = new Html5Qrcode("reader");
+            html5QrCode.start(
+                { facingMode: "environment" },
+                { fps: 10, qrbox: 250 },
+                surScanReussi
+            ).catch(err => {
+                console.error("Erreur caméra : " + err);
+                alert("Erreur caméra : impossible d'accéder à la caméra.");
+            });
+        }
+
+        function surScanReussi(decodedText) {
+            // Arrête la caméra dès que le scan réussit
+            html5QrCode.stop().then(() => {
+                let memberId = decodedText;
+                try {
+                    if (decodedText.includes('?')) {
+                        const urlObj = new URL(decodedText);
+                        memberId = urlObj.searchParams.get('id') || urlObj.searchParams.get('code') || decodedText;
                     }
-                })
-                .catch(error => {
-                    afficherMessage("Erreur de connexion au serveur de pointage.", "error");
-                    afficherBouton("Retour", "btn-reset", "index.html");
-                    console.error('Erreur:', error);
-                });
+                } catch (e) {}
+
+                // Masque le scanner et affiche le conteneur de résultat en mode chargement
+                document.getElementById('scanner-container').style.display = 'none';
+                const resultContainer = document.getElementById('result-container');
+                resultContainer.style.display = 'block';
+                
+                const messageDiv = document.getElementById('message');
+                messageDiv.className = 'status loading';
+                messageDiv.innerHTML = "Vérification de la sortie en cours...";
+
+                // Interroge Google Apps Script
+                fetch(`${scriptUrl}?code=${encodeURIComponent(memberId)}&action=sortie`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === "ok") {
+                            afficherMessage(`Au revoir ${data.name} ! Votre sortie a été enregistrée.`, "success");
+                            afficherBouton("Scanner un autre badge", "btn-reset", () => location.reload());
+                        } else if (data.status === "enquete_requise") {
+                            afficherMessage(`📄 <strong>ENQUÊTE REQUISE</strong><br>${data.name} : Veuillez remplir l'enquête de satisfaction avant de sortir.<br><small>ID : ${memberId}</small>`, "warning");
+                            afficherBouton("Remplir l'enquête", "btn-survey", () => {
+                                window.open(data.url, '_blank');
+                            });
+                        } else if (data.status === "sortie_impossible") {
+                            afficherMessage(`Attention ${data.name}, votre sortie est impossible (vous n'êtes pas marqué comme présent).`, "error");
+                            afficherBouton("Scanner un autre", "btn-reset", () => location.reload());
+                        } else {
+                            afficherMessage("Erreur : " + (data.error || "Membre inconnu ou introuvable."), "error");
+                            afficherBouton("Réessayer", "btn-reset", () => location.reload());
+                        }
+                    })
+                    .catch(error => {
+                        afficherMessage("Erreur de connexion au serveur de pointage.", "error");
+                        afficherBouton("Réessayer", "btn-reset", () => location.reload());
+                        console.error('Erreur:', error);
+                    });
+            }).catch(err => console.error(err));
         }
 
         function afficherMessage(texte, style) {
+            const messageDiv = document.getElementById('message');
             messageDiv.innerHTML = texte;
             messageDiv.className = `status ${style}`;
         }
 
-        function afficherBouton(texte, classe, lien, ouvrirNouvelOnglet = false) {
+        function afficherBouton(texte, classe, callback) {
+            const actionArea = document.getElementById('action-area');
+            const actionBtn = document.getElementById('action-btn');
             actionArea.style.display = 'block';
             actionBtn.innerText = texte;
             actionBtn.className = `btn ${classe}`;
-            actionBtn.onclick = function() {
-                if (ouvrirNouvelOnglet) {
-                    window.open(lien, '_blank');
-                } else {
-                    window.location.href = lien;
-                }
-            };
+            actionBtn.onclick = callback;
         }
+
+        // Lance la caméra au chargement de la page
+        window.onload = demarrerCamera;
     </script>
 </body>
 </html>
