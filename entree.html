@@ -68,6 +68,17 @@
         .loading-bg {
             background-color: #6b7280; /* Gris chargement */
         }
+        /* Style pour la photo du membre */
+        #member-photo {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-bottom: 15px;
+            border: 3px solid #10b981;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            display: none;
+        }
         .btn {
             display: inline-block;
             padding: 12px 24px;
@@ -102,6 +113,7 @@
 
         <!-- Étape 2 : Le Grand Bloc de Résultat (Masqué par défaut) -->
         <div id="result-container" style="display: none;">
+            <img id="member-photo" src="" alt="Photo du membre">
             <div id="message-box" class="status-box"></div>
             <div id="action-area"></div>
         </div>
@@ -116,6 +128,9 @@
             const resultContainer = document.getElementById('result-container');
             resultContainer.style.display = 'block';
             
+            // Masquer la photo pendant le chargement
+            document.getElementById('member-photo').style.display = 'none';
+
             const msgBox = document.getElementById('message-box');
             msgBox.className = "status-box loading-bg";
             msgBox.style.display = "block";
@@ -126,6 +141,15 @@
                 .then(data => {
                     const actionArea = document.getElementById('action-area');
                     actionArea.innerHTML = '';
+
+                    // Gestion de l'affichage de la photo si elle est présente dans le JSON
+                    const imgElem = document.getElementById('member-photo');
+                    if (data.photo && data.photo.trim() !== "") {
+                        imgElem.src = data.photo;
+                        imgElem.style.display = 'inline-block';
+                    } else {
+                        imgElem.style.display = 'none';
+                    }
 
                     if (data.status === "ok") {
                         msgBox.className = "status-box success-bg";
