@@ -65,7 +65,7 @@
             messageDiv.className = 'status error';
             messageDiv.innerText = "Erreur : Aucun identifiant trouvé dans le lien.";
         } else {
-            const scriptUrl = "https://script.google.com/macros/s/AKfycbylCllts6IAH5Dvi_q9AJJo_5rzKUa4ydxRl9Kxjw0KzHq_g2czV451Wn6CMPWEGnI/exec";
+            const scriptUrl = "https://script.google.com/macros/s/AKfycbwxrMlUs5eZPjaZEP3lSTbUA_EN3W1y98L5281Ixr6DEhIoadGmppuuuEecXqN-og/exec";
 
             fetch(`${scriptUrl}?code=${encodeURIComponent(memberId)}&action=entree`)
                 .then(response => response.json())
