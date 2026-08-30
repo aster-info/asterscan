@@ -8,101 +8,108 @@
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #f4f4f9; /* Fond général propre identique à l'entrée */
+            background-color: #f4f4f9;
             margin: 0;
             padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+        .card {
+            background: white;
+            padding: 30px 25px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
             text-align: center;
+            max-width: 500px;
+            width: 100%;
         }
         .logo {
-            max-width: 150px;
+            max-width: 130px;
             height: auto;
             margin-bottom: 15px;
         }
         h3 {
-            font-size: 22px;
-            color: #333;
+            color: #2c3e50;
             margin-top: 0;
             margin-bottom: 20px;
+            font-size: 22px;
+            font-weight: 700;
         }
         #reader {
             width: 100%;
             max-width: 400px;
             margin: 0 auto 15px auto;
-            border-radius: 10px;
+            border-radius: 12px;
             overflow: hidden;
         }
-        p {
-            font-size: 14px;
-            color: #666;
-        }
-        /* Style pour l'affichage des résultats après scan */
-        .card-result {
-            background: white;
-            padding: 30px;
-            border-radius: 16px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
-            max-width: 450px;
-            margin: 20px auto;
-            text-align: center;
+        .status-box {
+            padding: 25px 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            color: white;
+            font-weight: 500;
+            font-size: 16px;
+            line-height: 1.5;
             display: none;
         }
-        .status {
-            font-weight: 500;
-            padding: 18px 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            font-size: 15px;
-            line-height: 1.5;
+        .success-bg {
+            background-color: #0ea5e9; /* Turquoise / Bleu-vert identique à ton modèle */
         }
-        .success {
-            background-color: #f0fdf4;
-            color: #166534;
-            border: 1px solid #bbf7d0;
+        .warning-bg {
+            background-color: #f97316; /* Orange pour l'enquête requise */
         }
-        .error {
-            background-color: #fef2f2;
-            color: #b91c1c;
-            border: 1px solid #fecaca;
+        .error-bg {
+            background-color: #ef4444; /* Rouge pour les erreurs */
         }
-        .warning {
-            background-color: #f97316;
-            color: white;
-            font-weight: 600;
+        .loading-bg {
+            background-color: #6b7280; /* Gris pour le chargement */
         }
         .btn {
             display: inline-block;
             padding: 12px 24px;
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 600;
             text-decoration: none;
             border-radius: 8px;
             border: none;
             cursor: pointer;
             color: white;
+            margin-top: 5px;
         }
-        .btn-survey {
-            background-color: #16a34a;
+        .btn-blue {
+            background-color: #007bff;
         }
-        .btn-reset {
-            background-color: #3b82f6;
+        .btn-blue:hover {
+            background-color: #0056b3;
+        }
+        .btn-green {
+            background-color: #28a745;
+            margin-bottom: 10px;
+        }
+        .btn-green:hover {
+            background-color: #218838;
         }
     </style>
 </head>
 <body>
 
-    <!-- Écran principal du Scanner (sans boîte blanche) -->
-    <div id="scanner-screen">
+    <div class="card">
         <img src="logo.png" alt="Logo ASTER" class="logo">
         <h3>Contrôle des Sorties</h3>
-        <div id="reader"></div>
-        <p>Scannez le badge du membre pour valider la sortie</p>
-    </div>
 
-    <!-- Écran de Résultat (s'affiche uniquement après le scan) -->
-    <div id="result-screen" class="card-result">
-        <div id="message" class="status"></div>
-        <div id="action-area">
-            <button id="action-btn" class="btn">Action</button>
+        <!-- Étape 1 : Le Scanner Caméra -->
+        <div id="scanner-container">
+            <div id="reader"></div>
+            <p style="font-size: 14px; color: #666;">Scannez le badge du membre pour valider la sortie</p>
+        </div>
+
+        <!-- Étape 2 : Le Grand Bloc de Résultat (Masqué par défaut) -->
+        <div id="result-container">
+            <div id="message-box" class="status-box"></div>
+            <div id="action-area"></div>
         </div>
     </div>
 
@@ -132,56 +139,72 @@
                     }
                 } catch (e) {}
 
-                // Bascule l'affichage vers l'écran de résultat
-                document.getElementById('scanner-screen').style.display = 'none';
-                const resultScreen = document.getElementById('result-screen');
-                resultScreen.style.display = 'block';
+                // Masquer le scanner et afficher le bloc de résultat
+                document.getElementById('scanner-container').style.display = 'none';
+                document.getElementById('result-container').style.display = 'block';
+                
+                const msgBox = document.getElementById('message-box');
+                msgBox.className = "status-box loading-bg";
+                msgBox.style.display = "block";
+                msgBox.innerHTML = "Vérification de la sortie en cours...";
 
-                const messageDiv = document.getElementById('message');
-                messageDiv.className = 'status';
-                messageDiv.style.background = '#f3f4f6';
-                messageDiv.style.color = '#6b7280';
-                messageDiv.innerHTML = "Vérification de la sortie en cours...";
-
-                // Appel Google Apps Script
+                // Appel au script Google Apps
                 fetch(`${scriptUrl}?code=${encodeURIComponent(memberId)}&action=sortie`)
                     .then(response => response.json())
                     .then(data => {
+                        const actionArea = document.getElementById('action-area');
+                        actionArea.innerHTML = '';
+
                         if (data.status === "ok") {
-                            afficherMessage(`Au revoir ${data.name} ! Votre sortie a été enregistrée.`, "success");
-                            afficherBouton("Scanner un autre badge", "btn-reset", () => location.reload());
+                            msgBox.className = "status-box success-bg";
+                            msgBox.innerHTML = `✓ SORTIE VALIDÉE<br><span style="font-size: 18px; font-weight: bold;">${data.name}</span><br><small>ID : ${memberId}</small>`;
+                            
+                            const btn = document.createElement('button');
+                            btn.className = "btn btn-blue";
+                            btn.innerText = "Scanner un autre";
+                            btn.onclick = () => location.reload();
+                            actionArea.appendChild(btn);
+
                         } else if (data.status === "enquete_requise") {
-                            afficherMessage(`📄 <strong>ENQUÊTE REQUISE</strong><br>${data.name} : Veuillez remplir l'enquête de satisfaction avant de sortir.<br><small>ID : ${memberId}</small>`, "warning");
-                            afficherBouton("Remplir l'enquête", "btn-survey", () => {
-                                window.open(data.url, '_blank');
-                            });
-                        } else if (data.status === "sortie_impossible") {
-                            afficherMessage(`Attention ${data.name}, votre sortie est impossible (vous n'êtes pas marqué comme présent).`, "error");
-                            afficherBouton("Scanner un autre", "btn-reset", () => location.reload());
+                            msgBox.className = "status-box warning-bg";
+                            msgBox.innerHTML = `📄 ENQUÊTE REQUISE<br><span style="font-size: 15px;">${data.name} : Veuillez remplir l'enquête de satisfaction avant de sortir.</span><br><small>ID : ${memberId}</small>`;
+                            
+                            const btnSurvey = document.createElement('button');
+                            btnSurvey.className = "btn btn-green";
+                            btnSurvey.innerText = "Remplir l'enquête";
+                            btnSurvey.onclick = () => window.open(data.url, '_blank');
+                            actionArea.appendChild(btnSurvey);
+
+                            actionArea.appendChild(document.createElement('br'));
+
+                            const btnReset = document.createElement('button');
+                            btnReset.className = "btn btn-blue";
+                            btnReset.innerText = "Scanner un autre";
+                            btnReset.onclick = () => location.reload();
+                            actionArea.appendChild(btnReset);
+
                         } else {
-                            afficherMessage("Erreur : " + (data.error || "Membre inconnu ou introuvable."), "error");
-                            afficherBouton("Réessayer", "btn-reset", () => location.reload());
+                            msgBox.className = "status-box error-bg";
+                            msgBox.innerHTML = `❌ Erreur : ${data.error || "Membre introuvable ou non présent."}`;
+                            
+                            const btn = document.createElement('button');
+                            btn.className = "btn btn-blue";
+                            btn.innerText = "Réessayer";
+                            btn.onclick = () => location.reload();
+                            actionArea.appendChild(btn);
                         }
                     })
                     .catch(error => {
-                        afficherMessage("Erreur de connexion au serveur de pointage.", "error");
-                        afficherBouton("Réessayer", "btn-reset", () => location.reload());
+                        msgBox.className = "status-box error-bg";
+                        msgBox.innerHTML = "Erreur de connexion au serveur.";
+                        const btn = document.createElement('button');
+                        btn.className = "btn btn-blue";
+                        btn.innerText = "Réessayer";
+                        btn.onclick = () => location.reload();
+                        document.getElementById('action-area').appendChild(btn);
                         console.error('Erreur:', error);
                     });
             }).catch(err => console.error(err));
-        }
-
-        function afficherMessage(texte, style) {
-            const messageDiv = document.getElementById('message');
-            messageDiv.innerHTML = texte;
-            messageDiv.className = `status ${style}`;
-        }
-
-        function afficherBouton(texte, classe, callback) {
-            const actionBtn = document.getElementById('action-btn');
-            actionBtn.innerText = texte;
-            actionBtn.className = `btn ${classe}`;
-            actionBtn.onclick = callback;
         }
 
         window.onload = demarrerCamera;
