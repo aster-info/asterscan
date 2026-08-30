@@ -6,72 +6,105 @@
     <title>Contrôle de Sortie - ASTER</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f0f0f9;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #edf2f7;
             margin: 0;
             padding: 20px;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
+            box-sizing: border-box;
         }
         .card {
             background: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            padding: 40px 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
             text-align: center;
             max-width: 450px;
             width: 100%;
+            margin: auto;
+        }
+        .logo {
+            max-width: 140px;
+            height: auto;
+            margin-bottom: 15px;
         }
         h3 {
             color: #2c3e50;
-            margin-bottom: 15px;
+            margin-top: 0;
+            margin-bottom: 25px;
+            font-size: 20px;
+            font-weight: 700;
         }
         .status {
-            font-weight: bold;
-            padding: 15px;
-            border-radius: 5px;
-            margin-top: 15px;
-            font-size: 16px;
+            font-weight: 500;
+            padding: 20px 15px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            font-size: 15px;
+            line-height: 1.5;
         }
         .success {
-            background-color: #d4edda;
-            color: #155724;
+            background-color: #f0fdf4;
+            color: #166534;
+            border: 1px solid #bbf7d0;
         }
         .error {
-            background-color: #f8d7da;
-            color: #721c24;
+            background-color: #fef2f2;
+            color: #b91c1c;
+            border: 1px solid #fecaca;
         }
         .warning {
-            background-color: #fff3cd;
-            color: #856404;
+            background-color: #f97316;
+            color: white;
+            font-weight: 600;
         }
         .loading {
-            color: #007bff;
-            background-color: #e2f0d9;
+            color: #6b7280;
+            background-color: #f3f4f6;
+            border: 1px solid #e5e7eb;
         }
         .btn {
             display: inline-block;
-            margin-top: 15px;
-            padding: 10px 20px;
-            background-color: #007bff;
-            color: white;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: 600;
             text-decoration: none;
-            border-radius: 5px;
-            font-weight: bold;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            margin-top: 5px;
         }
         .btn-survey {
-            background-color: #28a745;
+            background-color: #16a34a;
+            color: white;
+        }
+        .btn-survey:hover {
+            background-color: #15803d;
+        }
+        .btn-reset {
+            background-color: #3b82f6;
+            color: white;
+        }
+        .btn-reset:hover {
+            background-color: #2563eb;
+        }
+        #action-area {
+            display: none;
         }
     </style>
 </head>
 <body>
 
     <div class="card">
-        <h3>Sortie Congrès ASTER</h3>
+        <img src="logo.png" alt="Logo ASTER" class="logo">
+        <h3>Contrôle des Sorties</h3>
         <div id="message" class="status loading">Vérification de la sortie en cours...</div>
-        <div id="action-area"></div>
+        <div id="action-area">
+            <button id="action-btn" class="btn">Action</button>
+        </div>
     </div>
 
     <script>
@@ -79,38 +112,53 @@
         const memberId = urlParams.get('code') || urlParams.get('id');
         const messageDiv = document.getElementById('message');
         const actionArea = document.getElementById('action-area');
+        const actionBtn = document.getElementById('action-btn');
         const scriptUrl = "https://script.google.com/macros/s/AKfycbxr2945zVbehDI2yAH2YgSsHA2BOCM8r3whjyL2zFYuMOrJjhIm7e_9NWNkc0QARwQ/exec";
 
         if (!memberId) {
-            messageDiv.className = 'status error';
-            messageDiv.innerText = "Erreur : Aucun identifiant trouvé dans le lien.";
+            afficherMessage("Erreur : Aucun identifiant trouvé dans le lien.", "error");
+            afficherBouton("Retour", "btn-reset", "index.html");
         } else {
             fetch(`${scriptUrl}?code=${encodeURIComponent(memberId)}&action=sortie`)
                 .then(response => response.json())
                 .then(data => {
                     if (data.status === "ok") {
-                        messageDiv.className = 'status success';
-                        messageDiv.innerText = `Au revoir ${data.name} ! Votre sortie a été enregistrée.`;
-                        actionArea.innerHTML = `<a href="index.html" class="btn">Scanner un autre badge</a>`;
+                        afficherMessage(`Au revoir ${data.name} ! Votre sortie a été enregistrée.`, "success");
+                        afficherBouton("Scanner un autre badge", "btn-reset", "index.html");
                     } else if (data.status === "enquete_requise") {
-                        messageDiv.className = 'status warning';
-                        messageDiv.innerText = `${data.name}, ${data.message}`;
-                        actionArea.innerHTML = `<a href="${data.url}" target="_blank" class="btn btn-survey">Remplir l'enquête</a>`;
+                        afficherMessage(`📄 <strong>ENQUÊTE REQUISE</strong><br>${data.name} : Veuillez remplir l'enquête de satisfaction avant de sortir.<br><small>ID : ${memberId}</small>`, "warning");
+                        afficherBouton("Remplir l'enquête", "btn-survey", data.url, true);
                     } else if (data.status === "sortie_impossible") {
-                        messageDiv.className = 'status error';
-                        messageDiv.innerText = `Attention ${data.name}, votre sortie est impossible (vous n'êtes pas marqué comme présent).`;
-                        actionArea.innerHTML = `<a href="index.html" class="btn">Retour</a>`;
+                        afficherMessage(`Attention ${data.name}, votre sortie est impossible (vous n'êtes pas marqué comme présent).`, "error");
+                        afficherBouton("Retour", "btn-reset", "index.html");
                     } else {
-                        messageDiv.className = 'status error';
-                        messageDiv.innerText = "Erreur : " + (data.error || "Membre inconnu ou introuvable.");
-                        actionArea.innerHTML = `<a href="index.html" class="btn">Retour</a>`;
+                        afficherMessage("Erreur : " + (data.error || "Membre inconnu ou introuvable."), "error");
+                        afficherBouton("Retour", "btn-reset", "index.html");
                     }
                 })
                 .catch(error => {
-                    messageDiv.className = 'status error';
-                    messageDiv.innerText = "Erreur de connexion au serveur de pointage.";
+                    afficherMessage("Erreur de connexion au serveur de pointage.", "error");
+                    afficherBouton("Retour", "btn-reset", "index.html");
                     console.error('Erreur:', error);
                 });
+        }
+
+        function afficherMessage(texte, style) {
+            messageDiv.innerHTML = texte;
+            messageDiv.className = `status ${style}`;
+        }
+
+        function afficherBouton(texte, classe, lien, ouvrirNouvelOnglet = false) {
+            actionArea.style.display = 'block';
+            actionBtn.innerText = texte;
+            actionBtn.className = `btn ${classe}`;
+            actionBtn.onclick = function() {
+                if (ouvrirNouvelOnglet) {
+                    window.open(lien, '_blank');
+                } else {
+                    window.location.href = lien;
+                }
+            };
         }
     </script>
 </body>
