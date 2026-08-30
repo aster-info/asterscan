@@ -45,9 +45,11 @@
                         const urlObj = new URL(decodedText);
                         id = urlObj.searchParams.get('id') || urlObj.searchParams.get('code') || decodedText;
                     }
-                } catch (e) {}
+                } catch (e) {
+                    // Garde le texte brut si ce n'est pas une URL
+                }
 
-                // CORRECTION : On redirige vers ton fichier GitHub 'entree.html' et non vers Google Apps Script
+                // Redirige vers ta page web GitHub 'entree.html' avec le code scanné
                 window.location.href = `entree.html?code=${encodeURIComponent(id)}`;
             }).catch(err => console.error(err));
         }
@@ -60,7 +62,7 @@
                 surScanReussi
             ).catch(err => {
                 console.error("Erreur caméra : " + err);
-                alert("Erreur caméra : impossible d'accéder à la caméra.");
+                alert("Erreur caméra : impossible d'accéder à la caméra (vérifiez les autorisations HTTPS).");
             });
         }
 
