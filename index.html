@@ -26,31 +26,6 @@
             border-radius: 10px;
             overflow: hidden;
         }
-        #result-container {
-            margin-top: 20px;
-            padding: 20px;
-            border-radius: 12px;
-            color: white;
-            display: none;
-        }
-        .bg-success { background-color: #28a745; }
-        .bg-already { background-color: #ffc107; color: #333 !important; }
-        .bg-unknown { background-color: #dc3545; }
-        
-        .status-title { font-size: 18px; font-weight: bold; }
-        .member-name { font-size: 16px; margin-top: 6px; }
-        .scanned-code { font-size: 14px; margin-top: 6px; opacity: 0.9; }
-
-        button {
-            margin-top: 20px;
-            padding: 12px 24px;
-            font-size: 16px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-        }
     </style>
 </head>
 <body>
@@ -58,14 +33,6 @@
     <img src="logo.png" alt="Logo ASTER" class="logo">
     <h1>Contrôle des Entrées</h1>
     <div id="reader"></div>
-    
-    <div id="result-container">
-        <div id="result-status" class="status-title">En attente...</div>
-        <div id="result-name" class="member-name"></div>
-        <div id="result-code" class="scanned-code"></div>
-    </div>
-
-    <button id="restart-btn" style="display:none;" onclick="relancerScan()">Scanner un autre</button>
 
     <script>
         const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxr2945zVbehDI2yAH2YgSsHA2BOCM8r3whjyL2zFYuMOrJjhIm7e_9NWNkc0QARwQ/exec";
@@ -73,67 +40,21 @@
 
         function surScanReussi(decodedText) {
             html5QrCode.stop().then(() => {
-                document.getElementById('reader').style.display = 'none';
-                verifierDansGoogleSheet(decodedText);
-            }).catch(err => console.error(err));
-        }
-
-        function verifierDansGoogleSheet(code) {
-            try {
-                if (code.includes('?')) {
-                    const urlObj = new URL(code);
-                    code = urlObj.searchParams.get('id') || urlObj.searchParams.get('code') || code;
-                }
-            } catch (e) {
-                // Garde le texte brut si ce n'est pas une URL
-            }
-
-            const container = document.getElementById('result-container');
-            const statusEl = document.getElementById('result-status');
-            const nameEl = document.getElementById('result-name');
-            const codeEl = document.getElementById('result-code');
-            const btn = document.getElementById('restart-btn');
-
-            container.style.display = 'block';
-            statusEl.innerText = "Vérification...";
-            nameEl.innerText = "";
-            codeEl.innerText = "Code : " + code;
-            container.className = "";
-
-            fetch(`${WEB_APP_URL}?code=${encodeURIComponent(code)}&action=entree`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === "ok") {
-                        container.className = "bg-success";
-                        statusEl.innerText = "✔ ACCÈS AUTORISÉ";
-                        nameEl.innerText = data.name;
-                    } else if (data.status === "already_entered") {
-                        container.className = "bg-already";
-                        statusEl.innerText = "⚠ DÉJÀ POINTÉ";
-                        nameEl.innerText = `${data.name} est déjà entré.`;
-                    } else {
-                        container.className = "bg-unknown";
-                        statusEl.innerText = "✖ INCONNU";
-                        nameEl.innerText = "Ce QR code n'existe pas.";
+                let id = decodedText;
+                
+                try {
+                    if (decodedText.includes('?')) {
+                        const urlObj = new URL(decodedText);
+                        id = urlObj.searchParams.get('id') || urlObj.searchParams.get('code') || decodedText;
                     }
-                    codeEl.innerText = "ID : " + code;
-                    btn.style.display = 'inline-block';
-                })
-                .catch(err => {
-                    container.className = "bg-unknown";
-                    statusEl.innerText = "Erreur de communication";
-                    nameEl.innerText = "Vérifiez votre connexion.";
-                    codeEl.innerText = "ID : " + code;
-                    btn.style.display = 'inline-block';
-                    console.error(err);
-                });
-        }
+                } catch (e) {
+                    // Garde le texte brut si ce n'est pas une URL
+                }
 
-        function relancerScan() {
-            document.getElementById('result-container').style.display = 'none';
-            document.getElementById('restart-btn').style.display = 'none';
-            document.getElementById('reader').style.display = 'block';
-            demarrerCamera();
+                // Redirige directement vers la page HTML générée par Google Apps Script
+                window.location.href = `${WEB_APP_URL}?id=${encodeURIComponent(id)}&action=entree`;
+                
+            }).catch(err => console.error(err));
         }
 
         function demarrerCamera() {
@@ -144,7 +65,7 @@
                 surScanReussi
             ).catch(err => {
                 console.error("Erreur caméra : " + err);
-                alert("Erreur caméra : impossible d'accéder à la caméra (vérifiez les autorisations HTTPS du navigateur).");
+                alert("Erreur caméra : impossible d'accéder à la caméra (vérifiez les autorisations HTTPS).");
             });
         }
 
