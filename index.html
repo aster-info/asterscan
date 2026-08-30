@@ -35,7 +35,6 @@
     <div id="reader"></div>
 
     <script>
-        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxr2945zVbehDI2yAH2YgSsHA2BOCM8r3whjyL2zFYuMOrJjhIm7e_9NWNkc0QARwQ/exec";
         let html5QrCode;
 
         function surScanReussi(decodedText) {
@@ -46,12 +45,10 @@
                         const urlObj = new URL(decodedText);
                         id = urlObj.searchParams.get('id') || urlObj.searchParams.get('code') || decodedText;
                     }
-                } catch (e) {
-                    // Garde le texte brut si ce n'est pas une URL
-                }
+                } catch (e) {}
 
-                // CORRECTION : On envoie bien ?code=... pour correspondre à ton Apps Script
-                window.location.href = `${WEB_APP_URL}?code=${encodeURIComponent(id)}&action=entree`;
+                // CORRECTION : On redirige vers ton fichier GitHub 'entree.html' et non vers Google Apps Script
+                window.location.href = `entree.html?code=${encodeURIComponent(id)}`;
             }).catch(err => console.error(err));
         }
 
@@ -63,7 +60,7 @@
                 surScanReussi
             ).catch(err => {
                 console.error("Erreur caméra : " + err);
-                alert("Erreur caméra : impossible d'accéder à la caméra (vérifiez les autorisations HTTPS).");
+                alert("Erreur caméra : impossible d'accéder à la caméra.");
             });
         }
 
