@@ -56,16 +56,28 @@
             display: none;
         }
         .success-bg {
-            background-color: #17a2b8; /* Turquoise / Bleu-vert */
-        }
-        .warning-bg {
-            background-color: #f97316; /* Orange pour l'enquête */
+            background-color: #10b981; /* Vert vif */
         }
         .error-bg {
-            background-color: dc2626; /* Rouge pour les erreurs */
+            background-color: #ef4444; /* Rouge pour les erreurs techniques */
+        }
+        .warning-bg {
+            background-color: #f97316; /* Orange vif et bien voyant */
+            color: white;
         }
         .loading-bg {
             background-color: #6b7280; /* Gris chargement */
+        }
+        /* Style pour la photo du membre */
+        #member-photo {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-bottom: 15px;
+            border: 3px solid #10b981;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            display: none;
         }
         .btn {
             display: inline-block;
@@ -85,13 +97,6 @@
         .btn-blue:hover {
             background-color: #0056b3;
         }
-        .btn-green {
-            background-color: #28a745;
-            margin-bottom: 10px;
-        }
-        .btn-green:hover {
-            background-color: #218838;
-        }
     </style>
 </head>
 <body>
@@ -108,6 +113,7 @@
 
         <!-- Étape 2 : Le Grand Bloc de Résultat (Masqué par défaut) -->
         <div id="result-container" style="display: none;">
+            <img id="member-photo" src="" alt="Photo du membre">
             <div id="message-box" class="status-box"></div>
             <div id="action-area"></div>
         </div>
@@ -118,65 +124,63 @@
         const scriptUrl = "https://script.google.com/macros/s/AKfycbxr2945zVbehDI2yAH2YgSsHA2BOCM8r3whjyL2zFYuMOrJjhIm7e_9NWNkc0QARwQ/exec";
 
         function verifierID(memberId) {
-            // Masquer le scanner et afficher le bloc de résultat
             document.getElementById('scanner-container').style.display = 'none';
             const resultContainer = document.getElementById('result-container');
             resultContainer.style.display = 'block';
             
+            // Masquer la photo pendant le chargement
+            document.getElementById('member-photo').style.display = 'none';
+
             const msgBox = document.getElementById('message-box');
             msgBox.className = "status-box loading-bg";
             msgBox.style.display = "block";
             msgBox.innerHTML = "Vérification de la sortie en cours...";
 
-            // Appel au script Google Apps
+            // Appel de l'action de sortie
             fetch(`${scriptUrl}?code=${encodeURIComponent(memberId)}&action=sortie`)
                 .then(response => response.json())
                 .then(data => {
                     const actionArea = document.getElementById('action-area');
                     actionArea.innerHTML = '';
 
+                    // Gestion de l'affichage de la photo si elle est présente dans le JSON
+                    const imgElem = document.getElementById('member-photo');
+                    if (data.photo && data.photo.trim() !== "") {
+                        imgElem.src = data.photo;
+                        imgElem.style.display = 'inline-block';
+                    } else {
+                        imgElem.style.display = 'none';
+                    }
+
                     if (data.status === "ok") {
                         msgBox.className = "status-box success-bg";
                         msgBox.innerHTML = `✓ SORTIE VALIDÉE<br><span style="font-size: 18px; font-weight: bold;">${data.name}</span><br><small>ID : ${memberId}</small>`;
-                        
-                        const btn = document.createElement('button');
-                        btn.className = "btn btn-blue";
-                        btn.innerText = "Scanner un autre";
-                        btn.onclick = () => location.href = "sortie.html";
-                        actionArea.appendChild(btn);
-
                     } else if (data.status === "enquete_requise") {
                         msgBox.className = "status-box warning-bg";
-                        msgBox.innerHTML = `📄 ENQUÊTE REQUISE<br><span style="font-size: 15px;">${data.name} : Veuillez remplir l'enquête de satisfaction avant de sortir.</span><br><small>ID : ${memberId}</small>`;
+                        msgBox.innerHTML = `⚠️ ${data.message}<br><span style="font-size: 18px; font-weight: bold;">${data.name}</span>`;
                         
-                        const btnSurvey = document.createElement('button');
-                        btnSurvey.className = "btn btn-green";
-                        btnSurvey.innerText = "Remplir l'enquête";
-                        btnSurvey.onclick = () => window.open(data.url, '_blank');
-                        actionArea.appendChild(btnSurvey);
-
-                        actionArea.appendChild(document.createElement('br'));
-
-                        const btnReset = document.createElement('button');
-                        btnReset.className = "btn btn-blue";
-                        btnReset.innerText = "Scanner un autre";
-                        btnReset.onclick = () => location.href = "sortie.html";
-                        actionArea.appendChild(btnReset);
-
+                        // Bouton vers l'enquête Google Forms
+                        const btnEnquete = document.createElement('a');
+                        btnEnquete.className = "btn btn-blue";
+                        btnEnquete.style.marginRight = "10px";
+                        btnEnquete.innerText = "Remplir l'enquête";
+                        btnEnquete.href = data.url;
+                        btnEnquete.target = "_blank";
+                        actionArea.appendChild(btnEnquete);
                     } else {
-                        msgBox.className = "status-box error-bg";
-                        msgBox.innerHTML = `⛔ Erreur : ${data.error || "Membre introuvable ou non présent."}`;
-                        
-                        const btn = document.createElement('button');
-                        btn.className = "btn btn-blue";
-                        btn.innerText = "Réessayer";
-                        btn.onclick = () => location.href = "sortie.html";
-                        actionArea.appendChild(btn);
+                        msgBox.className = "status-box warning-bg";
+                        msgBox.innerHTML = `⚠️ ${data.error || "Sortie impossible ou membre non présent."}`;
                     }
+
+                    const btn = document.createElement('button');
+                    btn.className = "btn btn-blue";
+                    btn.innerText = "Scanner un autre";
+                    btn.onclick = () => location.href = "sortie.html";
+                    actionArea.appendChild(btn);
                 })
                 .catch(error => {
                     msgBox.className = "status-box error-bg";
-                    msgBox.innerHTML = "Erreur de connexion au serveur.";
+                    msgBox.innerHTML = "❌ Erreur de connexion au serveur.";
                     const btn = document.createElement('button');
                     btn.className = "btn btn-blue";
                     btn.innerText = "Réessayer";
@@ -187,15 +191,12 @@
         }
 
         window.onload = function() {
-            // Vérifie si l'URL contient un paramètre "id" (ex: ?id=ASTER-...)
             const urlParams = new URLSearchParams(window.location.search);
-            const memberId = urlParams.get('id');
+            const memberId = urlParams.get('id') || urlParams.get('code');
 
             if (memberId) {
-                // Si un ID est présent dans le lien du tableur, on lance direct la vérification sans caméra
-                verifierID(memberId);
+                verifierID(memberId.trim());
             } else {
-                // Sinon (si on tape juste l'URL de base), on allume la caméra normalement
                 html5QrCode = new Html5Qrcode("reader");
                 html5QrCode.start(
                     { facingMode: "environment" },
@@ -209,7 +210,7 @@
                                     cleanId = urlObj.searchParams.get('id') || urlObj.searchParams.get('code') || decodedText;
                                 }
                             } catch (e) {}
-                            verifierID(cleanId);
+                            verifierID(cleanId.trim());
                         });
                     }
                 ).catch(err => {
