@@ -7,7 +7,7 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #f4f6f9;
+            background-color: #f0f0f9;
             margin: 0;
             padding: 20px;
             display: flex;
@@ -24,7 +24,7 @@
             max-width: 400px;
             width: 100%;
         }
-        h2 {
+        h3 {
             color: #2c3e50;
             margin-bottom: 15px;
         }
@@ -52,21 +52,21 @@
 <body>
 
     <div class="card">
-        <h2>Entrée Congrès ASTER</h2>
+        <h3>Entrée Congrès ASTER</h3>
         <div id="message" class="status loading">Validation de votre entrée en cours...</div>
     </div>
 
     <script>
         const urlParams = new URLSearchParams(window.location.search);
-        const memberId = urlParams.get('id');
+        const memberId = urlParams.get('code') || urlParams.get('id');
         const messageDiv = document.getElementById('message');
+        const scriptUrl = "https://script.google.com/macros/s/AKfycbxr2945zVbehDI2yAH2YgSsHA2BOCM8r3whjyL2zFYuMOrJjhIm7e_9NWNkc0QARwQ/exec";
 
+        // CORRECTION : On vérifie si l'identifiant est ABSENT (!memberId)
         if (!memberId) {
             messageDiv.className = 'status error';
             messageDiv.innerText = "Erreur : Aucun identifiant trouvé dans le lien.";
         } else {
-            const scriptUrl = "https://script.google.com/macros/s/AKfycbxr2945zVbehDI2yAH2YgSsHA2BOCM8r3whjyL2zFYuMOrJjhIm7e_9NWNkc0QARwQ/exec";
-
             fetch(`${scriptUrl}?code=${encodeURIComponent(memberId)}&action=entree`)
                 .then(response => response.json())
                 .then(data => {
@@ -88,6 +88,5 @@
                 });
         }
     </script>
-
 </body>
 </html>
