@@ -56,16 +56,16 @@
             display: none;
         }
         .success-bg {
-            background-color: #0ea5e9; /* Turquoise / Bleu-vert identique à ton modèle */
+            background-color: #0ea5e9; /* Turquoise / Bleu-vert */
         }
         .warning-bg {
-            background-color: #f97316; /* Orange pour l'enquête requise */
+            background-color: #f97316; /* Orange pour l'enquête */
         }
         .error-bg {
             background-color: #ef4444; /* Rouge pour les erreurs */
         }
         .loading-bg {
-            background-color: #6b7280; /* Gris pour le chargement */
+            background-color: #6b7280; /* Gris chargement */
         }
         .btn {
             display: inline-block;
@@ -107,7 +107,7 @@
         </div>
 
         <!-- Étape 2 : Le Grand Bloc de Résultat (Masqué par défaut) -->
-        <div id="result-container">
+        <div id="result-container" style="display: none;">
             <div id="message-box" class="status-box"></div>
             <div id="action-area"></div>
         </div>
@@ -117,97 +117,106 @@
         let html5QrCode;
         const scriptUrl = "https://script.google.com/macros/s/AKfycbxr2945zVbehDI2yAH2YgSsHA2BOCM8r3whjyL2zFYuMOrJjhIm7e_9NWNkc0QARwQ/exec";
 
-        function demarrerCamera() {
-            html5QrCode = new Html5Qrcode("reader");
-            html5QrCode.start(
-                { facingMode: "environment" },
-                { fps: 10, qrbox: 250 },
-                surScanReussi
-            ).catch(err => {
-                console.error("Erreur caméra : " + err);
-                alert("Erreur caméra : impossible d'accéder à la caméra.");
-            });
-        }
+        function verifierID(memberId) {
+            // Masquer le scanner et afficher le bloc de résultat
+            document.getElementById('scanner-container').style.display = 'none';
+            const resultContainer = document.getElementById('result-container');
+            resultContainer.style.display = 'block';
+            
+            const msgBox = document.getElementById('message-box');
+            msgBox.className = "status-box loading-bg";
+            msgBox.style.display = "block";
+            msgBox.innerHTML = "Vérification de la sortie en cours...";
 
-        function surScanReussi(decodedText) {
-            html5QrCode.stop().then(() => {
-                let memberId = decodedText;
-                try {
-                    if (decodedText.includes('?')) {
-                        const urlObj = new URL(decodedText);
-                        memberId = urlObj.searchParams.get('id') || urlObj.searchParams.get('code') || decodedText;
-                    }
-                } catch (e) {}
+            // Appel au script Google Apps
+            fetch(`${scriptUrl}?code=${encodeURIComponent(memberId)}&action=sortie`)
+                .then(response => response.json())
+                .then(data => {
+                    const actionArea = document.getElementById('action-area');
+                    actionArea.innerHTML = '';
 
-                // Masquer le scanner et afficher le bloc de résultat
-                document.getElementById('scanner-container').style.display = 'none';
-                document.getElementById('result-container').style.display = 'block';
-                
-                const msgBox = document.getElementById('message-box');
-                msgBox.className = "status-box loading-bg";
-                msgBox.style.display = "block";
-                msgBox.innerHTML = "Vérification de la sortie en cours...";
+                    if (data.status === "ok") {
+                        msgBox.className = "status-box success-bg";
+                        msgBox.innerHTML = `✓ SORTIE VALIDÉE<br><span style="font-size: 18px; font-weight: bold;">${data.name}</span><br><small>ID : ${memberId}</small>`;
+                        
+                        const btn = document.createElement('button');
+                        btn.className = "btn btn-blue";
+                        btn.innerText = "Scanner un autre";
+                        btn.onclick = () => location.href = "sortie.html";
+                        actionArea.appendChild(btn);
 
-                // Appel au script Google Apps
-                fetch(`${scriptUrl}?code=${encodeURIComponent(memberId)}&action=sortie`)
-                    .then(response => response.json())
-                    .then(data => {
-                        const actionArea = document.getElementById('action-area');
-                        actionArea.innerHTML = '';
+                    } else if (data.status === "enquete_requise") {
+                        msgBox.className = "status-box warning-bg";
+                        msgBox.innerHTML = `📄 ENQUÊTE REQUISE<br><span style="font-size: 15px;">${data.name} : Veuillez remplir l'enquête de satisfaction avant de sortir.</span><br><small>ID : ${memberId}</small>`;
+                        
+                        const btnSurvey = document.createElement('button');
+                        btnSurvey.className = "btn btn-green";
+                        btnSurvey.innerText = "Remplir l'enquête";
+                        btnSurvey.onclick = () => window.open(data.url, '_blank');
+                        actionArea.appendChild(btnSurvey);
 
-                        if (data.status === "ok") {
-                            msgBox.className = "status-box success-bg";
-                            msgBox.innerHTML = `✓ SORTIE VALIDÉE<br><span style="font-size: 18px; font-weight: bold;">${data.name}</span><br><small>ID : ${memberId}</small>`;
-                            
-                            const btn = document.createElement('button');
-                            btn.className = "btn btn-blue";
-                            btn.innerText = "Scanner un autre";
-                            btn.onclick = () => location.reload();
-                            actionArea.appendChild(btn);
+                        actionArea.appendChild(document.createElement('br'));
 
-                        } else if (data.status === "enquete_requise") {
-                            msgBox.className = "status-box warning-bg";
-                            msgBox.innerHTML = `📄 ENQUÊTE REQUISE<br><span style="font-size: 15px;">${data.name} : Veuillez remplir l'enquête de satisfaction avant de sortir.</span><br><small>ID : ${memberId}</small>`;
-                            
-                            const btnSurvey = document.createElement('button');
-                            btnSurvey.className = "btn btn-green";
-                            btnSurvey.innerText = "Remplir l'enquête";
-                            btnSurvey.onclick = () => window.open(data.url, '_blank');
-                            actionArea.appendChild(btnSurvey);
+                        const btnReset = document.createElement('button');
+                        btnReset.className = "btn btn-blue";
+                        btnReset.innerText = "Scanner un autre";
+                        btnReset.onclick = () => location.href = "sortie.html";
+                        actionArea.appendChild(btnReset);
 
-                            actionArea.appendChild(document.createElement('br'));
-
-                            const btnReset = document.createElement('button');
-                            btnReset.className = "btn btn-blue";
-                            btnReset.innerText = "Scanner un autre";
-                            btnReset.onclick = () => location.reload();
-                            actionArea.appendChild(btnReset);
-
-                        } else {
-                            msgBox.className = "status-box error-bg";
-                            msgBox.innerHTML = `❌ Erreur : ${data.error || "Membre introuvable ou non présent."}`;
-                            
-                            const btn = document.createElement('button');
-                            btn.className = "btn btn-blue";
-                            btn.innerText = "Réessayer";
-                            btn.onclick = () => location.reload();
-                            actionArea.appendChild(btn);
-                        }
-                    })
-                    .catch(error => {
+                    } else {
                         msgBox.className = "status-box error-bg";
-                        msgBox.innerHTML = "Erreur de connexion au serveur.";
+                        msgBox.innerHTML = `❌ Erreur : ${data.error || "Membre introuvable ou non présent."}`;
+                        
                         const btn = document.createElement('button');
                         btn.className = "btn btn-blue";
                         btn.innerText = "Réessayer";
-                        btn.onclick = () => location.reload();
-                        document.getElementById('action-area').appendChild(btn);
-                        console.error('Erreur:', error);
-                    });
-            }).catch(err => console.error(err));
+                        btn.onclick = () => location.href = "sortie.html";
+                        actionArea.appendChild(btn);
+                    }
+                })
+                .catch(error => {
+                    msgBox.className = "status-box error-bg";
+                    msgBox.innerHTML = "Erreur de connexion au serveur.";
+                    const btn = document.createElement('button');
+                    btn.className = "btn btn-blue";
+                    btn.innerText = "Réessayer";
+                    btn.onclick = () => location.href = "sortie.html";
+                    document.getElementById('action-area').appendChild(btn);
+                    console.error('Erreur:', error);
+                });
         }
 
-        window.onload = demarrerCamera;
+        window.onload = function() {
+            // Vérifie si l'URL contient un paramètre "id" (ex: ?id=ASTER-...)
+            const urlParams = new URLSearchParams(window.location.search);
+            const memberId = urlParams.get('id');
+
+            if (memberId) {
+                // Si un ID est présent dans le lien du tableur, on lance direct la vérification sans caméra
+                verifierID(memberId);
+            } else {
+                // Sinon (si on tape juste l'URL de base), on allume la caméra normalement
+                html5QrCode = new Html5Qrcode("reader");
+                html5QrCode.start(
+                    { facingMode: "environment" },
+                    { fps: 10, qrbox: 250 },
+                    (decodedText) => {
+                        html5QrCode.stop().then(() => {
+                            let cleanId = decodedText;
+                            try {
+                                if (decodedText.includes('?')) {
+                                    const urlObj = new URL(decodedText);
+                                    cleanId = urlObj.searchParams.get('id') || urlObj.searchParams.get('code') || decodedText;
+                                }
+                            } catch (e) {}
+                            verifierID(cleanId);
+                        });
+                    }
+                ).catch(err => {
+                    console.error("Erreur caméra : " + err);
+                });
+            }
+        };
     </script>
 </body>
 </html>
