@@ -167,9 +167,12 @@
                         btnEnquete.href = data.url;
                         btnEnquete.target = "_blank";
                         actionArea.appendChild(btnEnquete);
+                    } else if (data.status === "deja_sorti") {
+                        msgBox.className = "status-box warning-bg";
+                        msgBox.innerHTML = `⚠️ ${data.message}`;
                     } else {
                         msgBox.className = "status-box warning-bg";
-                        msgBox.innerHTML = `⚠️ ${data.error || "Sortie impossible ou membre non présent."}`;
+                        msgBox.innerHTML = `⚠️ ${data.message || "Sortie impossible ou membre non présent."}`;
                     }
 
                     const btn = document.createElement('button');
