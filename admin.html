@@ -190,12 +190,8 @@
         const script = document.getElementById(callbackName);
         if (script) script.remove();
 
-        if (data && data.success && data.scan) {
-          const currentScanKey = `${data.scan.id}_${data.scan.heure}_${data.scan.statut}`;
-          if (currentScanKey !== lastScanKey) {
-            lastScanKey = currentScanKey;
-            updateDashboard(data.history);
-          }
+        if (data && data.success && data.history) {
+          updateDashboard(data.history);
         }
       };
 
@@ -234,21 +230,11 @@
       const listOut = document.getElementById("history-out");
 
       if (history && history.length > 0) {
-        const entriesIn = history.filter(item => item.statut === "Entrée");
-        const entriesOut = history.filter(item => item.statut === "Sortie");
+        // Sécurité stricte : On filtre uniquement les éléments valides dont le nom existe et n'est pas vide
+        const validHistory = history.filter(item => item.nom && item.nom.trim() !== "" && item.nom !== "Inconnu");
+
+        const entriesIn = validHistory.filter(item => item.statut === "Entrée");
+        const entriesOut = validHistory.filter(item => item.statut === "Sortie");
 
         listIn.innerHTML = entriesIn.length > 0 
-          ? entriesIn.map(item => createHistoryRow(item, true)).join('')
-          : '<p class="empty-msg">Aucune entrée</p>';
-
-        listOut.innerHTML = entriesOut.length > 0 
-          ? entriesOut.map(item => createHistoryRow(item, false)).join('')
-          : '<p class="empty-msg">Aucune sortie</p>';
-      }
-    }
-
-    setInterval(checkNewScansJSONP, 2500);
-    checkNewScansJSONP();
-  </script>
-</body>
-</html>
+          ? entriesIn.map(
