@@ -191,8 +191,6 @@
 
         if (data && data.success) {
           updateDashboard(data.history || [], data.sorties || []);
-        } else {
-          console.warn("Données reçues invalides :", data);
         }
       };
 
@@ -203,8 +201,6 @@
       scriptTag.onerror = function() {
         delete window[callbackName];
         scriptTag.remove();
-        document.getElementById("history-in").innerHTML = '<p class="empty-msg" style="color:red;">Erreur de connexion</p>';
-        document.getElementById("history-out").innerHTML = '<p class="empty-msg" style="color:red;">Erreur de connexion</p>';
       };
 
       document.body.appendChild(scriptTag);
