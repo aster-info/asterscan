@@ -170,7 +170,6 @@
 
   <script>
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxr2945zVbehDI2yAH2YgSsHA2BOCM8r3whjyL2zFYuMOrJjhIm7e_9NWNkc0QARwQ/exec";
-    let lastScanKey = null;
 
     function nettoyerHeure(heureBrute) {
       if (!heureBrute) return "--:--:--";
@@ -190,8 +189,8 @@
         const script = document.getElementById(callbackName);
         if (script) script.remove();
 
-        if (data && data.success && data.history) {
-          updateDashboard(data.history);
+        if (data && data.success) {
+          updateDashboard(data.history || [], data.sorties || []);
         }
       };
 
@@ -225,16 +224,30 @@
       `;
     }
 
-    function updateDashboard(history) {
+    function updateDashboard(history, sorties) {
       const listIn = document.getElementById("history-in");
       const listOut = document.getElementById("history-out");
 
-      if (history && history.length > 0) {
-        // Sécurité stricte : On filtre uniquement les éléments valides dont le nom existe et n'est pas vide
-        const validHistory = history.filter(item => item.nom && item.nom.trim() !== "" && item.nom !== "Inconnu");
+      // Traitement des Entrées
+      const validHistory = history.filter(item => item.nom && item.nom.trim() !== "" && item.nom !== "Inconnu");
+      if (validHistory.length > 0) {
+        listIn.innerHTML = validHistory.map(item => createHistoryRow(item, true)).join('');
+      } else {
+        listIn.innerHTML = '<p class="empty-msg">Aucune entrée</p>';
+      }
 
-        const entriesIn = validHistory.filter(item => item.statut === "Entrée");
-        const entriesOut = validHistory.filter(item => item.statut === "Sortie");
+      // Traitement des Sorties
+      const validSorties = sorties.filter(item => item.nom && item.nom.trim() !== "" && item.nom !== "Inconnu");
+      if (validSorties.length > 0) {
+        listOut.innerHTML = validSorties.map(item => createHistoryRow(item, false)).join('');
+      } else {
+        listOut.innerHTML = '<p class="empty-msg">Aucune sortie</p>';
+      }
+    }
 
-        listIn.innerHTML = entriesIn.length > 0 
-          ? entriesIn.map(
+    // Actualisation automatique toutes les 2,5 secondes
+    setInterval(checkNewScansJSONP, 2500);
+    checkNewScansJSONP();
+  </script>
+</body>
+</html>
