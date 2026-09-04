@@ -120,31 +120,30 @@
         let html5QrCode;
         const scriptUrl = "https://script.google.com/macros/s/AKfycbxr2945zVbehDI2yAH2YgSsHA2BOCM8r3whjyL2zFYuMOrJjhIm7e_9NWNkc0QARwQ/exec";
 
-        // Fonction de nettoyage ultra-robuste pour extraire HH:MM:SS du format brut Google Sheets / JS
-        function nettoyerHeure(texteBrut) {
-            if (!texteBrut) return "--:--:--";
-            const str = String(texteBrut);
-            
-            // Recherche d'une séquence au format HH:MM:SS
-            const match = str.match(/(\d{2}:\d{2}:\d{2})/);
-            if (match) {
-                return match[1];
-            }
-            return str;
+        // Nettoie n'importe quelle chaîne de caractères pour extraire l'heure HH:MM:SS
+        function extraireHeure(texte) {
+            if (!texte) return "--:--:--";
+            const match = String(texte).match(/(\d{2}:\d{2}:\d{2})/);
+            return match ? match[1] : texte;
         }
 
-        // Fonction pour nettoyer le message d'avertissement complet si l'API renvoie une phrase avec la date technique
-        function formaterMessage(messageOriginal, heureBrute) {
+        // Nettoie radicalement le message en y chassant la date technique de Google Sheets
+        function formaterMessage(messageOriginal) {
             if (!messageOriginal) return "";
-            const heurePropre = nettoyerHeure(heureBrute);
-            
-            // Si le message contient la date technique "Sat Dec 30...", on la remplace proprement par l'heure courte
-            let messageNettoye = messageOriginal;
-            if (messageNettoye.includes("1899")) {
-                // Supprime tout le bloc de date/heure moche et le remplace par l'heure propre
-                messageNettoye = messageNettoye.replace(/à\s+[A-Za-z]{3}\s+[A-Za-z]{3}\s+\d+\s+\d{4}\s+\d{2}:\d{2}:\d{2}[^!]*/, `à ${heurePropre} `);
+            let msg = String(messageOriginal);
+
+            // Expression régulière pour capturer le bloc de date moche (ex: "à Sat Dec 30 1899 11:11:38 GMT+0000...")
+            // et récupérer l'heure exacte cachée dedans pour la replacer proprement.
+            const regexDateMoche = /[A-Za-z]{3}\s+[A-Za-z]{3}\s+\d+\s+\d{4}\s+(\d{2}:\d{2}:\d{2})/;
+            const match = msg.match(regexDateMoche);
+
+            if (match) {
+                const heureExacte = match[1]; // Ex: "11:11:38"
+                // On remplace toute la portion "à [date moche]" par "à [heure exacte]"
+                msg = msg.replace(/à\s+[A-Za-z]{3}\s+[A-Za-z]{3}\s+\d+\s+\d{4}\s+\d{2}:\d{2}:\d{2}[^!]*/, `à ${heureExacte} `);
             }
-            return messageNettoye;
+
+            return msg;
         }
 
         function verifierID(memberId) {
@@ -175,11 +174,11 @@
 
                     if (data.status === "ok") {
                         msgBox.className = "status-box success-bg";
-                        let heurePropre = nettoyerHeure(data.heure);
+                        let heurePropre = extraireHeure(data.heure);
                         msgBox.innerHTML = `✓ SORTIE VALIDÉE à ${heurePropre}<br><span style="font-size: 18px; font-weight: bold;">${data.name}</span><br><small>ID : ${memberId}</small>`;
                     } else if (data.status === "enquete_requise") {
                         msgBox.className = "status-box warning-bg";
-                        let msgFinal = formaterMessage(data.message, data.heure);
+                        let msgFinal = formaterMessage(data.message);
                         msgBox.innerHTML = `⚠️ ${msgFinal}<br><span style="font-size: 18px; font-weight: bold;">${data.name}</span>`;
                         
                         const btnEnquete = document.createElement('a');
@@ -191,11 +190,11 @@
                         actionArea.appendChild(btnEnquete);
                     } else if (data.status === "deja_sorti") {
                         msgBox.className = "status-box warning-bg";
-                        let msgFinal = formaterMessage(data.message, data.heure);
+                        let msgFinal = formaterMessage(data.message);
                         msgBox.innerHTML = `⚠️ ${msgFinal}`;
                     } else {
                         msgBox.className = "status-box warning-bg";
-                        let msgFinal = formaterMessage(data.message || "Sortie impossible ou membre non présent.", data.heure);
+                        let msgFinal = formaterMessage(data.message || "Sortie impossible ou membre non présent.");
                         msgBox.innerHTML = `⚠️ ${msgFinal}`;
                     }
 
