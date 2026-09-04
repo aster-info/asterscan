@@ -120,43 +120,6 @@
         let html5QrCode;
         const scriptUrl = "https://script.google.com/macros/s/AKfycbxr2945zVbehDI2yAH2YgSsHA2BOCM8r3whjyL2zFYuMOrJjhIm7e_9NWNkc0QARwQ/exec";
 
-        // Fonction ultra-robuste pour extraire l'heure
-        function extraireHeure(texte) {
-            if (!texte) return "--:--:--";
-            const str = String(texte);
-            
-            const match = str.match(/(\d{2}:\d{2}:\d{2})/);
-            if (match) {
-                return match[1];
-            }
-            
-            try {
-                const d = new Date(str);
-                if (!isNaN(d.getTime())) {
-                    const heures = String(d.getHours()).padStart(2, '0');
-                    const minutes = String(d.getMinutes()).padStart(2, '0');
-                    const secondes = String(d.getSeconds()).padStart(2, '0');
-                    return `${heures}:${minutes}:${secondes}`;
-                }
-            } catch (e) {}
-
-            return str;
-        }
-
-        function formaterMessage(messageOriginal) {
-            if (!messageOriginal) return "";
-            let msg = String(messageOriginal);
-
-            const matchHeure = msg.match(/(\d{2}:\d{2}:\d{2})/);
-            const heureTrouvee = matchHeure ? matchHeure[1] : "";
-
-            if (heureTrouvee) {
-                msg = msg.replace(/à\s+.*?(?=\s+!|$)/, `à ${heureTrouvee}`);
-            }
-
-            return msg;
-        }
-
         function verifierID(memberId) {
             document.getElementById('scanner-container').style.display = 'none';
             const resultContainer = document.getElementById('result-container');
@@ -169,44 +132,32 @@
             msgBox.style.display = "block";
             msgBox.innerHTML = "Vérification de la sortie en cours...";
 
-            fetch(`${scriptUrl}?code=${encodeURIComponent(memberId)}&action=sortie`)
+            // On appelle getDetails car ton Apps Script gère cette action pour récupérer les infos du membre
+            fetch(`${scriptUrl}?code=${encodeURIComponent(memberId)}&action=getDetails`)
                 .then(response => response.json())
                 .then(data => {
                     const actionArea = document.getElementById('action-area');
                     actionArea.innerHTML = '';
 
                     const imgElem = document.getElementById('member-photo');
-                    if (data.photo && data.photo.trim() !== "") {
-                        imgElem.src = data.photo;
-                        imgElem.style.display = 'inline-block';
-                    } else {
-                        imgElem.style.display = 'none';
-                    }
+                    
+                    if (data.success && data.member) {
+                        const m = data.member;
 
-                    if (data.status === "ok") {
+                        if (m.photo && m.photo.trim() !== "") {
+                            imgElem.src = m.photo;
+                            imgElem.style.display = 'inline-block';
+                        } else {
+                            imgElem.style.display = 'none';
+                        }
+
                         msgBox.className = "status-box success-bg";
-                        let heurePropre = extraireHeure(data.heure);
-                        msgBox.innerHTML = `✓ SORTIE VALIDÉE à ${heurePropre}<br><span style="font-size: 18px; font-weight: bold;">${data.name}</span><br><small>ID : ${memberId}</small>`;
-                    } else if (data.status === "enquete_requise") {
-                        msgBox.className = "status-box warning-bg";
-                        let msgFinal = formaterMessage(data.message);
-                        msgBox.innerHTML = `⚠️ ${msgFinal}<br><span style="font-size: 18px; font-weight: bold;">${data.name}</span>`;
+                        let heureAffichage = (m.heureDepart && m.heureDepart !== "Non pointé") ? m.heureDepart : (m.heureArrivee || "--:--:--");
                         
-                        const btnEnquete = document.createElement('a');
-                        btnEnquete.className = "btn btn-blue";
-                        btnEnquete.style.marginRight = "10px";
-                        btnEnquete.innerText = "Remplir l'enquête";
-                        btnEnquete.href = data.url;
-                        btnEnquete.target = "_blank";
-                        actionArea.appendChild(btnEnquete);
-                    } else if (data.status === "deja_sorti") {
-                        msgBox.className = "status-box warning-bg";
-                        let msgFinal = formaterMessage(data.message);
-                        msgBox.innerHTML = `⚠️ ${msgFinal}`;
+                        msgBox.innerHTML = `✓ SORTIE / STATUT à ${heureAffichage}<br><span style="font-size: 18px; font-weight: bold;">${m.nom}</span><br><small>ID : ${m.id}</small>`;
                     } else {
                         msgBox.className = "status-box warning-bg";
-                        let msgFinal = formaterMessage(data.message || "Sortie impossible ou membre non présent.");
-                        msgBox.innerHTML = `⚠️ ${msgFinal}`;
+                        msgBox.innerHTML = `⚠️ ${data.error || "Membre introuvable."}`;
                     }
 
                     const btn = document.createElement('button');
