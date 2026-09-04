@@ -132,7 +132,6 @@
     }
 
     .badge-count {
-      background-color: #00b894;
       color: white;
       border-radius: 50%;
       width: 24px;
@@ -190,7 +189,6 @@
 
   <h2>Liste des Inscrits</h2>
 
-  <!-- Bloc des compteurs In, Out et Inscrits -->
   <div class="stats-container">
     <div class="stat-badge-wrapper">
       <span>In:</span> <span class="badge-count in" id="inCount">0</span>
@@ -225,10 +223,8 @@
         if (data && data.success && data.members) {
           tousLesMembres = data.members;
           
-          // Mise à jour du total global reçu
           document.getElementById("totalCount").innerText = data.total;
 
-          // Calcul dynamique des compteurs In (Présent) et Out (Sorti)
           const nbIn = tousLesMembres.filter(m => m.statut === "Présent").length;
           const nbOut = tousLesMembres.filter(m => m.statut === "Sorti").length;
 
@@ -277,8 +273,9 @@
                 <div style="color:#777; font-size:0.8em;">${m.id}</div>
               </div>
             </div>
-            <div>
+            <div style="display: flex; align-items: center; gap: 6px;">
               <span class="badge ${badgeClass}">${m.statut}</span>
+              <span style="font-size: 0.75em; color: #777;">${m.heure || ''}</span>
             </div>
           </div>
         `;
@@ -293,7 +290,6 @@
       afficherMembres(resultats);
     }
 
-    // Actualisation automatique toutes les 5 secondes en conservant le filtre actif
     setInterval(() => {
       chargerMembresJSONP();
     }, 5000);
