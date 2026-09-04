@@ -74,6 +74,15 @@
       align-items: center;
     }
 
+    .member-item {
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    .member-item:hover {
+      background-color: #f8f9fa;
+    }
+
     .history-item:last-child, .member-item:last-child {
       border-bottom: none;
     }
@@ -132,6 +141,79 @@
       margin: 10px 0;
       font-size: 0.9em;
     }
+
+    /* --- STYLES DE LA FENÊTRE MODALE --- */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      padding: 20px;
+    }
+
+    .modal-card {
+      background: white;
+      width: 100%;
+      max-width: 360px;
+      border-radius: 16px;
+      padding: 20px;
+      text-align: center;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+
+    .modal-avatar {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid #00b894;
+      margin: 0 auto 12px auto;
+      display: block;
+      background-color: #eee;
+    }
+
+    .modal-title {
+      font-size: 1.15em;
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 4px;
+    }
+
+    .modal-id {
+      font-size: 0.85em;
+      color: #777;
+      margin-bottom: 15px;
+    }
+
+    .modal-details {
+      background: #f8f9fa;
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 18px;
+      text-align: left;
+      font-size: 0.9em;
+    }
+
+    .modal-details p {
+      margin: 6px 0;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .btn-close-modal {
+      background-color: #00b894;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 20px;
+      font-size: 0.95em;
+      font-weight: bold;
+      cursor: pointer;
+      width: 100%;
+    }
   </style>
 </head>
 <body>
@@ -160,13 +242,30 @@
     </div>
   </div>
 
+  <!-- Fenêtre Modale (Détails Membre) -->
+  <div class="modal-overlay" id="memberModal" onclick="fermerModalExterieur(event)">
+    <div class="modal-card">
+      <img class="modal-avatar" id="modal-photo" src="" alt="Photo">
+      <div class="modal-title" id="modal-nom">Nom du membre</div>
+      <div class="modal-id" id="modal-id">ID: ---</div>
+      
+      <div class="modal-details">
+        <p><strong>Statut :</strong> <span id="modal-statut">---</span></p>
+        <p><strong>Arrivée :</strong> <span id="modal-arrivee">--:--:--</span></p>
+        <p><strong>Sortie :</strong> <span id="modal-depart">--:--:--</span></p>
+      </div>
+
+      <button class="btn-close-modal" onclick="fermerModal()">Fermer</button>
+    </div>
+  </div>
+
   <script>
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxr2945zVbehDI2yAH2YgSsHA2BOCM8r3whjyL2zFYuMOrJjhIm7e_9NWNkc0QARwQ/exec";
     let lastScanKey = null;
     let tousLesMembres = [];
 
     function nettoyerHeure(heureBrute) {
-      if (!heureBrute) return "--:--:--";
+      if (!heureBrute || heureBrute === "Non pointé") return "--:--:--";
       const strHeure = String(heureBrute).trim();
       if (strHeure.indexOf("T") !== -1) {
         const parts = strHeure.split("T")[1];
@@ -201,7 +300,6 @@
             ? item.photoUrl 
             : 'https://via.placeholder.com/36?text=?';
 
-          // Détection de la couleur selon le statut (Entrée = Vert, Sortie = Rouge)
           const isEntree = (item.statut === "Entrée");
           const colorTime = isEntree ? "#00b894" : "#d63031";
 
@@ -260,7 +358,7 @@
       container.innerHTML = liste.map(m => {
         const photo = (m.photoUrl && m.photoUrl.length > 5) ? m.photoUrl : 'https://via.placeholder.com/36?text=?';
         return `
-          <div class="member-item">
+          <div class="member-item" onclick="ouvrirDetailsMembre('${m.id}')">
             <div class="user-info">
               <img class="mini-thumb" src="${photo}" alt="Avatar">
               <div>
@@ -279,6 +377,57 @@
         m.nom.toLowerCase().includes(recherche) || m.id.toLowerCase().includes(recherche)
       );
       afficherMembres(resultats);
+    }
+
+    // --- GESTION DE LA MODALE ET DE L'ACTION getDetails ---
+    function ouvrirDetailsMembre(idMembre) {
+      document.getElementById("modal-nom").innerText = "Chargement...";
+      document.getElementById("modal-id").innerText = "ID: " + idMembre;
+      document.getElementById("modal-photo").src = "https://via.placeholder.com/70?text=...";
+      document.getElementById("modal-statut").innerText = "...";
+      document.getElementById("modal-arrivee").innerText = "--:--:--";
+      document.getElementById("modal-depart").innerText = "--:--:--";
+      document.getElementById("memberModal").style.display = "flex";
+
+      const callbackName = "handleDetailsResponse_" + Math.floor(Math.random() * 100000);
+
+      window[callbackName] = function(data) {
+        delete window[callbackName];
+        if (scriptTag && scriptTag.parentNode) {
+          scriptTag.parentNode.removeChild(scriptTag);
+        }
+
+        if (data && data.success && data.member) {
+          const m = data.member;
+          document.getElementById("modal-nom").innerText = m.nom;
+          document.getElementById("modal-id").innerText = "ID: " + m.id;
+          document.getElementById("modal-photo").src = (m.photo && m.photo.length > 5) ? m.photo : 'https://via.placeholder.com/70?text=?';
+          document.getElementById("modal-statut").innerText = m.statut;
+          document.getElementById("modal-arrivee").innerText = nettoyerHeure(m.heureArrivee);
+          document.getElementById("modal-depart").innerText = nettoyerHeure(m.heureDepart);
+        } else {
+          document.getElementById("modal-nom").innerText = "Erreur";
+          document.getElementById("modal-statut").innerText = data.error || "Impossible de charger les détails.";
+        }
+      };
+
+      const scriptTag = document.createElement("script");
+      scriptTag.src = `${SCRIPT_URL}?action=getDetails&code=${encodeURIComponent(idMembre)}&callback=${callbackName}`;
+      scriptTag.onerror = function() {
+        document.getElementById("modal-nom").innerText = "Erreur de connexion";
+        document.getElementById("modal-statut").innerText = "Impossible de joindre le serveur.";
+      };
+      document.body.appendChild(scriptTag);
+    }
+
+    function fermerModal() {
+      document.getElementById("memberModal").style.display = "none";
+    }
+
+    function fermerModalExterieur(event) {
+      if (event.target.id === "memberModal") {
+        fermerModal();
+      }
     }
 
     // --- INITIALISATION ---
