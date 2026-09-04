@@ -56,19 +56,18 @@
             display: none;
         }
         .success-bg {
-            background-color: #17a2b8; /* Vert vif / Cyan */
+            background-color: #17a2b8;
         }
         .error-bg {
-            background-color: #ef4444; /* Rouge pour les erreurs techniques */
+            background-color: #ef4444;
         }
         .warning-bg {
-            background-color: #f97316; /* Orange vif et bien voyant */
+            background-color: #f97316;
             color: white;
         }
         .loading-bg {
-            background-color: #6b7280; /* Gris chargement */
+            background-color: #6b7280;
         }
-        /* Style pour la photo du membre */
         #member-photo {
             width: 100px;
             height: 100px;
@@ -105,13 +104,11 @@
         <img src="logo.png" alt="Logo ASTER" class="logo">
         <h3>Contrôle des Sorties</h3>
 
-        <!-- Étape 1 : Le Scanner Caméra -->
         <div id="scanner-container">
             <div id="reader"></div>
             <p style="font-size: 14px; color: #666;">Scannez le badge du membre pour valider la sortie</p>
         </div>
 
-        <!-- Étape 2 : Le Grand Bloc de Résultat (Masqué par défaut) -->
         <div id="result-container" style="display: none;">
             <img id="member-photo" src="" alt="Photo du membre">
             <div id="message-box" class="status-box"></div>
@@ -123,21 +120,31 @@
         let html5QrCode;
         const scriptUrl = "https://script.google.com/macros/s/AKfycbxr2945zVbehDI2yAH2YgSsHA2BOCM8r3whjyL2zFYuMOrJjhIm7e_9NWNkc0QARwQ/exec";
 
-        // Fonction pour extraire uniquement l'heure (HH:MM:SS) et éliminer le format date par défaut Google Sheets
-        function nettoyerHeure(heureBrute) {
-            if (!heureBrute || heureBrute === "Non pointé") return "--:--:--";
-            const str = String(heureBrute);
+        // Fonction de nettoyage ultra-robuste pour extraire HH:MM:SS du format brut Google Sheets / JS
+        function nettoyerHeure(texteBrut) {
+            if (!texteBrut) return "--:--:--";
+            const str = String(texteBrut);
             
+            // Recherche d'une séquence au format HH:MM:SS
             const match = str.match(/(\d{2}:\d{2}:\d{2})/);
             if (match) {
                 return match[1];
             }
+            return str;
+        }
+
+        // Fonction pour nettoyer le message d'avertissement complet si l'API renvoie une phrase avec la date technique
+        function formaterMessage(messageOriginal, heureBrute) {
+            if (!messageOriginal) return "";
+            const heurePropre = nettoyerHeure(heureBrute);
             
-            if (str.indexOf("T") !== -1) {
-                const parts = str.split("T")[1];
-                return parts ? parts.substring(0, 8) : str;
+            // Si le message contient la date technique "Sat Dec 30...", on la remplace proprement par l'heure courte
+            let messageNettoye = messageOriginal;
+            if (messageNettoye.includes("1899")) {
+                // Supprime tout le bloc de date/heure moche et le remplace par l'heure propre
+                messageNettoye = messageNettoye.replace(/à\s+[A-Za-z]{3}\s+[A-Za-z]{3}\s+\d+\s+\d{4}\s+\d{2}:\d{2}:\d{2}[^!]*/, `à ${heurePropre} `);
             }
-            return str.substring(0, 8);
+            return messageNettoye;
         }
 
         function verifierID(memberId) {
@@ -145,7 +152,6 @@
             const resultContainer = document.getElementById('result-container');
             resultContainer.style.display = 'block';
             
-            // Masquer la photo pendant le chargement
             document.getElementById('member-photo').style.display = 'none';
 
             const msgBox = document.getElementById('message-box');
@@ -153,14 +159,12 @@
             msgBox.style.display = "block";
             msgBox.innerHTML = "Vérification de la sortie en cours...";
 
-            // Appel de l'action de sortie
             fetch(`${scriptUrl}?code=${encodeURIComponent(memberId)}&action=sortie`)
                 .then(response => response.json())
                 .then(data => {
                     const actionArea = document.getElementById('action-area');
                     actionArea.innerHTML = '';
 
-                    // Gestion de l'affichage de la photo si elle est présente dans le JSON
                     const imgElem = document.getElementById('member-photo');
                     if (data.photo && data.photo.trim() !== "") {
                         imgElem.src = data.photo;
@@ -169,18 +173,15 @@
                         imgElem.style.display = 'none';
                     }
 
-                    // Nettoyage de l'heure si elle est renvoyée par l'API (ex: data.heure ou data.message)
-                    let heurePropre = data.heure ? nettoyerHeure(data.heure) : "";
-
                     if (data.status === "ok") {
                         msgBox.className = "status-box success-bg";
-                        let heureTexte = heurePropre ? ` à ${heurePropre}` : "";
-                        msgBox.innerHTML = `✓ SORTIE VALIDÉE${heureTexte}<br><span style="font-size: 18px; font-weight: bold;">${data.name}</span><br><small>ID : ${memberId}</small>`;
+                        let heurePropre = nettoyerHeure(data.heure);
+                        msgBox.innerHTML = `✓ SORTIE VALIDÉE à ${heurePropre}<br><span style="font-size: 18px; font-weight: bold;">${data.name}</span><br><small>ID : ${memberId}</small>`;
                     } else if (data.status === "enquete_requise") {
                         msgBox.className = "status-box warning-bg";
-                        msgBox.innerHTML = `⚠️ ${data.message}<br><span style="font-size: 18px; font-weight: bold;">${data.name}</span>`;
+                        let msgFinal = formaterMessage(data.message, data.heure);
+                        msgBox.innerHTML = `⚠️ ${msgFinal}<br><span style="font-size: 18px; font-weight: bold;">${data.name}</span>`;
                         
-                        // Bouton vers l'enquête Google Forms
                         const btnEnquete = document.createElement('a');
                         btnEnquete.className = "btn btn-blue";
                         btnEnquete.style.marginRight = "10px";
@@ -190,15 +191,12 @@
                         actionArea.appendChild(btnEnquete);
                     } else if (data.status === "deja_sorti") {
                         msgBox.className = "status-box warning-bg";
-                        // Remplacement propre de l'heure dans le message si elle y figure ou affichage direct
-                        let messageFinal = data.message;
-                        if (data.heure) {
-                            messageFinal = messageFinal.replace(data.heure, heurePropre);
-                        }
-                        msgBox.innerHTML = `⚠️ ${messageFinal}`;
+                        let msgFinal = formaterMessage(data.message, data.heure);
+                        msgBox.innerHTML = `⚠️ ${msgFinal}`;
                     } else {
                         msgBox.className = "status-box warning-bg";
-                        msgBox.innerHTML = `⚠️ ${data.message || "Sortie impossible ou membre non présent."}`;
+                        let msgFinal = formaterMessage(data.message || "Sortie impossible ou membre non présent.", data.heure);
+                        msgBox.innerHTML = `⚠️ ${msgFinal}`;
                     }
 
                     const btn = document.createElement('button');
