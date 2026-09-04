@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#f4f6f9">
 
-  <title>Monitoring Entrées & Liste des Inscrits - ASTER</title>
+  <title>Monitoring Entrées & Sorties - ASTER</title>
   
   <style>
     * {
@@ -45,16 +45,48 @@
       font-size: 1.4em;
     }
 
-    .section-title {
-      max-width: 420px;
-      margin: 0 auto 10px auto;
-      font-size: 1.1em;
-      color: #444;
-      text-align: center;
-      font-weight: bold;
+    /* Organisation en colonnes (Grille) */
+    .monitoring-grid {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 15px;
+      max-width: 860px;
+      margin: 0 auto 20px auto;
     }
 
-    .history-container, .members-container-card {
+    .column-box {
+      flex: 1;
+      min-width: 320px;
+      max-width: 410px;
+      background: white;
+      border-radius: 12px;
+      padding: 15px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+      text-align: left;
+    }
+
+    .column-title-in {
+      font-size: 1.1em;
+      font-weight: bold;
+      color: #00b894;
+      text-align: center;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #00b894;
+    }
+
+    .column-title-out {
+      font-size: 1.1em;
+      font-weight: bold;
+      color: #d63031;
+      text-align: center;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #d63031;
+    }
+
+    .members-container-card {
       text-align: left;
       max-width: 420px;
       width: 100%;
@@ -143,14 +175,27 @@
 
   <h2>Monitoring Entrées & Sorties</h2>
 
-  <!-- Historique des récents passages -->
-  <div class="section-title">Derniers passages</div>
-  <div class="history-container" id="history-list">
-    <p class="empty-msg">Aucun historique récent</p>
+  <!-- Conteneur des deux colonnes (Entrées / Sorties) -->
+  <div class="monitoring-grid">
+    <!-- Colonne Entrées -->
+    <div class="column-box">
+      <div class="column-title-in">ENTRÉES (IN)</div>
+      <div id="history-list">
+        <p class="empty-msg">Aucune entrée récente</p>
+      </div>
+    </div>
+
+    <!-- Colonne Sorties -->
+    <div class="column-box">
+      <div class="column-title-out">SORTIES (OUT)</div>
+      <div id="sorties-list">
+        <p class="empty-msg">Aucune sortie récente</p>
+      </div>
+    </div>
   </div>
 
   <!-- Section Liste des Inscrits -->
-  <div class="section-title">
+  <div style="font-size: 1.1em; font-weight: bold; color: #444; max-width: 420px; margin: 0 auto 10px auto;">
     Liste des Inscrits <span class="badge-count" id="totalCount">0</span>
   </div>
   <div class="members-container-card">
@@ -181,28 +226,22 @@
         const response = await fetch(`${SCRIPT_URL}?action=getLastScan`);
         const data = await response.json();
 
-        if (data.success && data.scan) {
-          const currentScanKey = String(data.scan.id) + "_" + String(data.scan.heure) + "_" + String(data.scan.statut);
-          if (currentScanKey !== lastScanKey) {
-            lastScanKey = currentScanKey;
-            updateDashboard(data.history);
-          }
+        if (data.success) {
+          updateDashboard(data.history, data.sorties);
         }
       } catch (error) {
         console.error("Erreur de connexion au monitoring :", error);
       }
     }
 
-    function updateDashboard(history) {
+    function updateDashboard(history, sorties) {
+      // Affichage des entrées
       const historyContainer = document.getElementById("history-list");
       if (history && history.length > 0) {
         historyContainer.innerHTML = history.map(item => {
           const thumbSrc = (item.photoUrl && String(item.photoUrl).trim().length > 5) 
             ? item.photoUrl 
             : 'https://via.placeholder.com/36?text=?';
-
-          const isEntree = (item.statut === "Entrée");
-          const colorTime = isEntree ? "#00b894" : "#d63031";
 
           return `
             <div class="history-item">
@@ -213,12 +252,37 @@
                   <small style="color:#666;">(${item.id || ''})</small>
                 </span>
               </div>
-              <span style="color:${colorTime}; font-weight:bold; margin-left: 10px;">${nettoyerHeure(item.heure)}</span>
+              <span style="color:#00b894; font-weight:bold; margin-left: 10px;">${nettoyerHeure(item.heure)}</span>
             </div>
           `;
         }).join('');
       } else {
-        historyContainer.innerHTML = '<p class="empty-msg">Aucun historique récent</p>';
+        historyContainer.innerHTML = '<p class="empty-msg">Aucune entrée récente</p>';
+      }
+
+      // Affichage des sorties
+      const sortiesContainer = document.getElementById("sorties-list");
+      if (sorties && sorties.length > 0) {
+        sortiesContainer.innerHTML = sorties.map(item => {
+          const thumbSrc = (item.photoUrl && String(item.photoUrl).trim().length > 5) 
+            ? item.photoUrl 
+            : 'https://via.placeholder.com/36?text=?';
+
+          return `
+            <div class="history-item">
+              <div class="user-info">
+                <img class="mini-thumb" src="${thumbSrc}" alt="Avatar">
+                <span>
+                  <strong>${item.nom || 'Inconnu'}</strong> 
+                  <small style="color:#666;">(${item.id || ''})</small>
+                </span>
+              </div>
+              <span style="color:#d63031; font-weight:bold; margin-left: 10px;">${nettoyerHeure(item.heure)}</span>
+            </div>
+          `;
+        }).join('');
+      } else {
+        sortiesContainer.innerHTML = '<p class="empty-msg">Aucune sortie récente</p>';
       }
     }
 
