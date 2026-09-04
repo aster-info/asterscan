@@ -120,24 +120,37 @@
         let html5QrCode;
         const scriptUrl = "https://script.google.com/macros/s/AKfycbxr2945zVbehDI2yAH2YgSsHA2BOCM8r3whjyL2zFYuMOrJjhIm7e_9NWNkc0QARwQ/exec";
 
-        // Fonction pour extraire l'heure propre (HH:MM:SS) d'une chaîne
+        // Fonction ultra-robuste pour extraire l'heure
         function extraireHeure(texte) {
             if (!texte) return "--:--:--";
-            const match = String(texte).match(/(\d{2}:\d{2}:\d{2})/);
-            return match ? match[1] : texte;
+            const str = String(texte);
+            
+            const match = str.match(/(\d{2}:\d{2}:\d{2})/);
+            if (match) {
+                return match[1];
+            }
+            
+            try {
+                const d = new Date(str);
+                if (!isNaN(d.getTime())) {
+                    const heures = String(d.getHours()).padStart(2, '0');
+                    const minutes = String(d.getMinutes()).padStart(2, '0');
+                    const secondes = String(d.getSeconds()).padStart(2, '0');
+                    return `${heures}:${minutes}:${secondes}`;
+                }
+            } catch (e) {}
+
+            return str;
         }
 
-        // Fonction pour nettoyer le message renvoyé par le script (remplace la date technique par l'heure extraite)
         function formaterMessage(messageOriginal) {
             if (!messageOriginal) return "";
             let msg = String(messageOriginal);
 
-            // Recherche une heure au format HH:MM:SS dans la phrase
             const matchHeure = msg.match(/(\d{2}:\d{2}:\d{2})/);
             const heureTrouvee = matchHeure ? matchHeure[1] : "";
 
             if (heureTrouvee) {
-                // Remplace la portion contenant la date moche par "à [heure]"
                 msg = msg.replace(/à\s+.*?(?=\s+!|$)/, `à ${heureTrouvee}`);
             }
 
