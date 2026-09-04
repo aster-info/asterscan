@@ -153,9 +153,8 @@
       
       window[callbackName] = function(data) {
         delete window[callbackName];
-        if (scriptTag && scriptTag.parentNode) {
-          scriptTag.parentNode.removeChild(scriptTag);
-        }
+        const script = document.getElementById(callbackName);
+        if (script) script.remove();
 
         if (data && data.success && data.members) {
           tousLesMembres = data.members;
@@ -167,10 +166,15 @@
       };
 
       const scriptTag = document.createElement("script");
+      scriptTag.id = callbackName;
       scriptTag.src = `${SCRIPT_URL}?action=getMembers&callback=${callbackName}`;
+      
       scriptTag.onerror = function() {
+        delete window[callbackName];
+        scriptTag.remove();
         document.getElementById("membersList").innerHTML = '<p class="empty-msg" style="color:red;">Échec du chargement des inscrits.</p>';
       };
+
       document.body.appendChild(scriptTag);
     }
 
