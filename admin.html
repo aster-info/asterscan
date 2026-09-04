@@ -3,251 +3,81 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Monitoring Entrées & Sorties - ASTER</title>
-
+  <title>Statut des Membres - ASTER</title>
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background-color: #f4f6f9;
-      color: #333;
-      padding: 15px;
-      text-align: center;
-    }
-
-    .logo-container {
-      margin: 10px auto 15px auto;
-      width: 110px;
-    }
-
-    .logo-container img {
-      width: 100%;
-      height: auto;
-      display: block;
-    }
-
-    h2 {
-      font-size: 1.25em;
-      color: #2c3e50;
-      margin-bottom: 20px;
-    }
-
-    .columns-container {
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
-      max-width: 600px;
-      margin: 0 auto;
-    }
-
-    @media (min-width: 600px) {
-      .columns-container {
-        flex-direction: row;
-      }
-    }
-
-    .column {
-      flex: 1;
-      background: #ffffff;
-      border-radius: 10px;
-      padding: 15px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
-      text-align: left;
-    }
-
-    .column-title {
-      font-weight: bold;
-      font-size: 0.95em;
-      padding-bottom: 8px;
-      margin-bottom: 10px;
-      border-bottom: 2px solid #eee;
-      text-align: center;
-    }
-
-    .column-title.in {
-      color: #00b894;
-      border-bottom-color: #00b894;
-    }
-
-    .column-title.out {
-      color: #d63031;
-      border-bottom-color: #d63031;
-    }
-
-    .history-item {
-      border-bottom: 1px solid #f0f0f0;
-      padding: 8px 0;
-      font-size: 0.85em;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-    }
-
-    .history-item:last-child {
-      border-bottom: none;
-    }
-
-    .history-user-info {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      overflow: hidden;
-    }
-
-    .mini-thumb {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      object-fit: cover;
-      border: 1px solid #ddd;
-      background-color: #eee;
-      flex-shrink: 0;
-    }
-
-    .user-name {
-      font-weight: bold;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      color: #333;
-    }
-
-    .time-badge {
-      font-weight: bold;
-      padding: 3px 6px;
-      border-radius: 4px;
-      font-size: 0.8em;
-      flex-shrink: 0;
-    }
-
-    .time-badge.entree {
-      color: #00b894;
-      background-color: #e6f9f5;
-    }
-
-    .time-badge.sortie {
-      color: #d63031;
-      background-color: #ffecec;
-    }
-
-    .empty-msg {
-      color: #aaa;
-      text-align: center;
-      margin: 10px 0;
-      font-size: 0.85em;
-    }
+    body { font-family: sans-serif; background: #f4f6f9; padding: 20px; color: #333; }
+    .container { max-width: 800px; margin: 0 auto; background: #fff; border-radius: 10px; padding: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+    h2 { text-align: center; color: #2c3e50; margin-bottom: 20px; }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9em; }
+    th, td { padding: 12px 10px; border-bottom: 1px solid #eee; }
+    th { background-color: #f8f9fa; color: #2c3e50; }
+    .user-info { display: flex; align-items: center; gap: 10px; }
+    .mini-thumb { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; background: #eee; }
+    .badge { font-weight: bold; padding: 4px 10px; border-radius: 4px; font-size: 0.85em; display: inline-block; }
+    .badge.present { color: #00b894; background-color: #e6f9f5; }
+    .badge.sorti { color: #d63031; background-color: #ffecec; }
+    .badge.attente { color: #b2bec3; background-color: #f1f2f6; }
+    .loading, .error { text-align: center; padding: 20px; color: #666; }
+    .error { color: #d63031; }
   </style>
 </head>
 <body>
-
-  <div class="logo-container">
-    <img src="logo.png" alt="Logo ASTER">
-  </div>
-
-  <h2>Monitoring Entrées & Sorties</h2>
-
-  <div class="columns-container">
-    <div class="column">
-      <div class="column-title in">ENTRÉES (IN)</div>
-      <div id="history-in">
-        <p class="empty-msg">Chargement...</p>
-      </div>
-    </div>
-
-    <div class="column">
-      <div class="column-title out">SORTIES (OUT)</div>
-      <div id="history-out">
-        <p class="empty-msg">Chargement...</p>
-      </div>
-    </div>
+  <div class="container">
+    <h2>Statut Actuel des Membres</h2>
+    <div id="content-area"><div class="loading">Chargement...</div></div>
   </div>
 
   <script>
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxr2945zVbehDI2yAH2YgSsHA2BOCM8r3whjyL2zFYuMOrJjhIm7e_9NWNkc0QARwQ/exec";
 
-    function nettoyerHeure(heureBrute) {
-      if (!heureBrute) return "--:--:--";
-      const str = String(heureBrute).trim();
-      if (str.includes("T")) {
-        const parts = str.split("T")[1];
-        return parts ? parts.substring(0, 8) : str;
-      }
-      return str.substring(0, 8);
-    }
-
-    function checkNewScansJSONP() {
-      const callbackName = "handleLastScan_" + Math.floor(Math.random() * 100000);
-
+    function fetchMembers() {
+      const callbackName = "cb_" + Math.floor(Math.random() * 100000);
       window[callbackName] = function(data) {
         delete window[callbackName];
-        const script = document.getElementById(callbackName);
-        if (script) script.remove();
-
+        document.getElementById(callbackName)?.remove();
         if (data && data.success) {
-          updateDashboard(data.history || [], data.sorties || []);
+          display(data.members);
+        } else {
+          showError("Erreur de récupération.");
         }
       };
 
-      const scriptTag = document.createElement("script");
-      scriptTag.id = callbackName;
-      scriptTag.src = `${SCRIPT_URL}?action=getLastScan&callback=${callbackName}`;
-      
-      scriptTag.onerror = function() {
-        delete window[callbackName];
-        scriptTag.remove();
-      };
-
-      document.body.appendChild(scriptTag);
+      const script = document.createElement("script");
+      script.id = callbackName;
+      script.src = `${SCRIPT_URL}?action=getMembers&callback=${callbackName}`;
+      script.onerror = () => showError("Erreur de connexion au script.");
+      document.body.appendChild(script);
     }
 
-    function createHistoryRow(item, isEntree) {
-      const thumbSrc = (item.photoUrl && String(item.photoUrl).trim().length > 5) 
-        ? item.photoUrl 
-        : 'https://via.placeholder.com/32?text=?';
-
-      const badgeClass = isEntree ? "entree" : "sortie";
-
-      return `
-        <div class="history-item">
-          <div class="history-user-info">
-            <img class="mini-thumb" src="${thumbSrc}" alt="Avatar">
-            <span class="user-name" title="${item.nom || ''}">${item.nom || 'Inconnu'}</span>
-          </div>
-          <span class="time-badge ${badgeClass}">${nettoyerHeure(item.heure)}</span>
-        </div>
-      `;
-    }
-
-    function updateDashboard(history, sorties) {
-      const listIn = document.getElementById("history-in");
-      const listOut = document.getElementById("history-out");
-
-      // Traitement des Entrées
-      const validHistory = history.filter(item => item.nom && item.nom.trim() !== "" && item.nom !== "Inconnu");
-      if (validHistory.length > 0) {
-        listIn.innerHTML = validHistory.map(item => createHistoryRow(item, true)).join('');
-      } else {
-        listIn.innerHTML = '<p class="empty-msg">Aucune entrée</p>';
+    function display(members) {
+      const container = document.getElementById("content-area");
+      if (!members.length) {
+        container.innerHTML = '<div class="loading">Aucun membre.</div>';
+        return;
       }
 
-      // Traitement des Sorties
-      const validSorties = sorties.filter(item => item.nom && item.nom.trim() !== "" && item.nom !== "Inconnu");
-      if (validSorties.length > 0) {
-        listOut.innerHTML = validSorties.map(item => createHistoryRow(item, false)).join('');
-      } else {
-        listOut.innerHTML = '<p class="empty-msg">Aucune sortie</p>';
-      }
+      let html = `<table><thead><tr><th>Membre</th><th>Statut</th></tr></thead><tbody>`;
+      members.forEach(m => {
+        const thumb = (m.photoUrl && m.photoUrl.trim() > 5) ? m.photoUrl : 'https://via.placeholder.com/36?text=?';
+        let bClass = "attente";
+        if (m.statut === "Présent") bClass = "present";
+        if (m.statut === "Sorti") bClass = "sorti";
+
+        html += `<tr>
+          <td><div class="user-info"><img class="mini-thumb" src="${thumb}"><span>${m.nom}</span></div></td>
+          <td><span class="badge ${bClass}">${m.statut}</span></td>
+        </tr>`;
+      });
+      html += `</tbody></table>`;
+      container.innerHTML = html;
     }
 
-    // Actualisation automatique toutes les 2,5 secondes
-    setInterval(checkNewScansJSONP, 2500);
-    checkNewScansJSONP();
+    function showError(msg) {
+      document.getElementById("content-area").innerHTML = `<div class="error">${msg}</div>`;
+    }
+
+    setInterval(fetchMembers, 5000);
+    fetchMembers();
   </script>
 </body>
 </html>
