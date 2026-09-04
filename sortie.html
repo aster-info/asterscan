@@ -120,27 +120,25 @@
         let html5QrCode;
         const scriptUrl = "https://script.google.com/macros/s/AKfycbxr2945zVbehDI2yAH2YgSsHA2BOCM8r3whjyL2zFYuMOrJjhIm7e_9NWNkc0QARwQ/exec";
 
-        // Nettoie n'importe quelle chaîne de caractères pour extraire l'heure HH:MM:SS
+        // Fonction pour extraire l'heure propre (HH:MM:SS) d'une chaîne
         function extraireHeure(texte) {
             if (!texte) return "--:--:--";
             const match = String(texte).match(/(\d{2}:\d{2}:\d{2})/);
             return match ? match[1] : texte;
         }
 
-        // Nettoie radicalement le message en y chassant la date technique de Google Sheets
+        // Fonction pour nettoyer le message renvoyé par le script (remplace la date technique par l'heure extraite)
         function formaterMessage(messageOriginal) {
             if (!messageOriginal) return "";
             let msg = String(messageOriginal);
 
-            // Expression régulière pour capturer le bloc de date moche (ex: "à Sat Dec 30 1899 11:11:38 GMT+0000...")
-            // et récupérer l'heure exacte cachée dedans pour la replacer proprement.
-            const regexDateMoche = /[A-Za-z]{3}\s+[A-Za-z]{3}\s+\d+\s+\d{4}\s+(\d{2}:\d{2}:\d{2})/;
-            const match = msg.match(regexDateMoche);
+            // Recherche une heure au format HH:MM:SS dans la phrase
+            const matchHeure = msg.match(/(\d{2}:\d{2}:\d{2})/);
+            const heureTrouvee = matchHeure ? matchHeure[1] : "";
 
-            if (match) {
-                const heureExacte = match[1]; // Ex: "11:11:38"
-                // On remplace toute la portion "à [date moche]" par "à [heure exacte]"
-                msg = msg.replace(/à\s+[A-Za-z]{3}\s+[A-Za-z]{3}\s+\d+\s+\d{4}\s+\d{2}:\d{2}:\d{2}[^!]*/, `à ${heureExacte} `);
+            if (heureTrouvee) {
+                // Remplace la portion contenant la date moche par "à [heure]"
+                msg = msg.replace(/à\s+.*?(?=\s+!|$)/, `à ${heureTrouvee}`);
             }
 
             return msg;
