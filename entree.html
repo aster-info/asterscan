@@ -151,13 +151,16 @@
                         imgElem.style.display = 'none';
                     }
 
+                    // CORRECTION ICI : Gestion propre des différents statuts retournés par le script
                     if (data.status === "ok") {
                         msgBox.className = "status-box success-bg";
                         msgBox.innerHTML = `✓ ENTRÉE VALIDÉE<br><span style="font-size: 18px; font-weight: bold;">${data.name}</span><br><small>ID : ${memberId}</small>`;
-                    } else {
-                        // S'affiche en orange vif avec l'icône d'avertissement
+                    } else if (data.status === "Membre deja_present(e)") {
                         msgBox.className = "status-box warning-bg";
-                        msgBox.innerHTML = `⚠️ ${data.error || "Erreur lors du contrôle."}`;
+                        msgBox.innerHTML = `⚠️ ${data.message}`;
+                    } else {
+                        msgBox.className = "status-box warning-bg";
+                        msgBox.innerHTML = `⚠️ ${data.message || data.error || "Erreur lors du contrôle."}`;
                     }
 
                     const btn = document.createElement('button');
