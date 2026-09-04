@@ -45,6 +45,28 @@
       font-size: 1.4em;
     }
 
+    .stats-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      max-width: 480px;
+      margin: 0 auto 12px auto;
+      font-size: 0.9em;
+      font-weight: bold;
+      color: #444;
+    }
+
+    .stat-badge-wrapper {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: #fff;
+      padding: 4px 10px;
+      border-radius: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
     .members-container-card {
       text-align: left;
       max-width: 480px;
@@ -113,13 +135,24 @@
       background-color: #00b894;
       color: white;
       border-radius: 50%;
-      width: 28px;
-      height: 28px;
+      width: 24px;
+      height: 24px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      font-size: 0.85em;
-      margin-left: 6px;
+      font-size: 0.8em;
+    }
+
+    .badge-count.in {
+      background-color: #00b894;
+    }
+
+    .badge-count.out {
+      background-color: #d63031;
+    }
+
+    .badge-count.total {
+      background-color: #0984e3;
     }
 
     .search-input {
@@ -157,8 +190,17 @@
 
   <h2>Liste des Inscrits</h2>
 
-  <div style="font-size: 1.1em; font-weight: bold; color: #444; max-width: 480px; margin: 0 auto 10px auto; display: flex; align-items: center; justify-content: center;">
-    Total inscrits <span class="badge-count" id="totalCount">0</span>
+  <!-- Bloc des compteurs In, Out et Inscrits -->
+  <div class="stats-container">
+    <div class="stat-badge-wrapper">
+      <span>In:</span> <span class="badge-count in" id="inCount">0</span>
+    </div>
+    <div class="stat-badge-wrapper">
+      <span>Out:</span> <span class="badge-count out" id="outCount">0</span>
+    </div>
+    <div class="stat-badge-wrapper">
+      <span>Inscrits:</span> <span class="badge-count total" id="totalCount">0</span>
+    </div>
   </div>
   
   <div class="members-container-card">
@@ -182,7 +224,17 @@
 
         if (data && data.success && data.members) {
           tousLesMembres = data.members;
+          
+          // Mise à jour du total global reçu
           document.getElementById("totalCount").innerText = data.total;
+
+          // Calcul dynamique des compteurs In (Présent) et Out (Sorti)
+          const nbIn = tousLesMembres.filter(m => m.statut === "Présent").length;
+          const nbOut = tousLesMembres.filter(m => m.statut === "Sorti").length;
+
+          document.getElementById("inCount").innerText = nbIn;
+          document.getElementById("outCount").innerText = nbOut;
+
           afficherMembres(tousLesMembres);
         } else {
           document.getElementById("membersList").innerHTML = `<p class="empty-msg" style="color:red;">Erreur: ${data.error || 'Aucun membre trouvé'}</p>`;
@@ -191,7 +243,6 @@
 
       const scriptTag = document.createElement("script");
       scriptTag.id = callbackName;
-      // Ajout du paramètre anti-cache (_=timestamp) pour forcer le rafraîchissement temps réel
       scriptTag.src = `${SCRIPT_URL}?action=getMembers&_=${new Date().getTime()}&callback=${callbackName}`;
       
       scriptTag.onerror = function() {
