@@ -153,10 +153,9 @@
                         msgBox.innerHTML = `✓ SORTIE VALIDÉE<br><span style="font-size: 18px; font-weight: bold;">${data.name}</span><br><small>ID : ${memberId}</small>`;
                     } else if (data.status === "enquete_requise") {
                         msgBox.className = "status-box warning-bg";
-                        // Nom sur la première ligne, ID placé SOUS LE NOM
                         msgBox.innerHTML = `⚠️ Sortie impossible : Enquête de satisfaction requise<br><span style="font-size: 18px; font-weight: bold;">${data.name}</span><br><small>ID : ${memberId}</small>`;
                         
-                        // Bouton vers l'enquête Google Forms avec pré-remplissage de l'ID unique via entry.1750101212
+                        // Bouton vers l'enquête Google Forms avec pré-remplissage dynamique de l'ID unique
                         const btnEnquete = document.createElement('a');
                         btnEnquete.className = "btn btn-blue";
                         btnEnquete.style.marginRight = "10px";
