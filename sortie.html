@@ -56,19 +56,18 @@
             display: none;
         }
         .success-bg {
-            background-color: #17a2b8; /* Vert vif */
+            background-color: #17a2b8;
         }
         .error-bg {
-            background-color: #ef4444; /* Rouge pour les erreurs techniques */
+            background-color: #ef4444;
         }
         .warning-bg {
-            background-color: #f97316; /* Orange vif et bien voyant */
+            background-color: #f97316;
             color: white;
         }
         .loading-bg {
-            background-color: #6b7280; /* Gris chargement */
+            background-color: #6b7280;
         }
-        /* Style pour la photo du membre */
         #member-photo {
             width: 100px;
             height: 100px;
@@ -128,23 +127,20 @@
             const resultContainer = document.getElementById('result-container');
             resultContainer.style.display = 'block';
             
-            // Masquer la photo pendant le chargement
-            document.getElementById('member-photo').style.display = 'none';
+            const imgElem = document.getElementById('member-photo');
+            imgElem.style.display = 'none';
 
             const msgBox = document.getElementById('message-box');
             msgBox.className = "status-box loading-bg";
             msgBox.style.display = "block";
             msgBox.innerHTML = "Vérification de la sortie en cours...";
 
-            // Appel de l'action de sortie
             fetch(`${scriptUrl}?code=${encodeURIComponent(memberId)}&action=sortie`)
                 .then(response => response.json())
                 .then(data => {
                     const actionArea = document.getElementById('action-area');
                     actionArea.innerHTML = '';
 
-                    // Gestion de l'affichage de la photo si elle est présente dans le JSON
-                    const imgElem = document.getElementById('member-photo');
                     if (data.photo && data.photo.trim() !== "") {
                         imgElem.src = data.photo;
                         imgElem.style.display = 'inline-block';
@@ -157,14 +153,17 @@
                         msgBox.innerHTML = `✓ SORTIE VALIDÉE<br><span style="font-size: 18px; font-weight: bold;">${data.name}</span><br><small>ID : ${memberId}</small>`;
                     } else if (data.status === "enquete_requise") {
                         msgBox.className = "status-box warning-bg";
-                        msgBox.innerHTML = `⚠️ ${data.message}<br><span style="font-size: 18px; font-weight: bold;">${data.name}</span>`;
+                        // Nom sur la première ligne, ID placé SOUS LE NOM (sans doublons)
+                        msgBox.innerHTML = `⚠️ Sortie impossible : Enquête de satisfaction requise<br><span style="font-size: 18px; font-weight: bold;">${data.name}</span><br><small>ID : ${memberId}</small>`;
                         
-                        // Bouton vers l'enquête Google Forms
+                        // Bouton vers l'enquête Google Forms avec transmission de l'ID unique
                         const btnEnquete = document.createElement('a');
                         btnEnquete.className = "btn btn-blue";
                         btnEnquete.style.marginRight = "10px";
                         btnEnquete.innerText = "Remplir l'enquête";
-                        btnEnquete.href = data.url;
+                        
+                        // Utilise l'URL du formulaire avec pré-remplissage de l'ID (remplace entry.XXXXX par le bon identifiant de champ de ton formulaire si besoin)
+                        btnEnquete.href = `https://docs.google.com/forms/d/e/1FAIpQLSfrSZ4xa4iJubIq_xskD34HUfUoLUqPW3AjQ2bVkmn7B1Rztg/viewform?usp=pp_url&entry.XXXXX=${encodeURIComponent(memberId)}`;
                         btnEnquete.target = "_blank";
                         actionArea.appendChild(btnEnquete);
                     } else if (data.status === "deja_sorti") {
