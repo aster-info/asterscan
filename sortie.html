@@ -153,17 +153,15 @@
                         msgBox.innerHTML = `✓ SORTIE VALIDÉE<br><span style="font-size: 18px; font-weight: bold;">${data.name}</span><br><small>ID : ${memberId}</small>`;
                     } else if (data.status === "enquete_requise") {
                         msgBox.className = "status-box warning-bg";
-                        // Nom sur la première ligne, ID placé SOUS LE NOM (sans doublons)
+                        // Nom sur la première ligne, ID placé SOUS LE NOM
                         msgBox.innerHTML = `⚠️ Sortie impossible : Enquête de satisfaction requise<br><span style="font-size: 18px; font-weight: bold;">${data.name}</span><br><small>ID : ${memberId}</small>`;
                         
-                        // Bouton vers l'enquête Google Forms avec transmission de l'ID unique
+                        // Bouton vers l'enquête Google Forms avec pré-remplissage de l'ID unique via entry.1750101212
                         const btnEnquete = document.createElement('a');
                         btnEnquete.className = "btn btn-blue";
                         btnEnquete.style.marginRight = "10px";
                         btnEnquete.innerText = "Remplir l'enquête";
-                        
-                        // Utilise l'URL du formulaire avec pré-remplissage de l'ID (remplace entry.XXXXX par le bon identifiant de champ de ton formulaire si besoin)
-                        btnEnquete.href = `https://docs.google.com/forms/d/e/1FAIpQLSfrSZ4xa4iJubIq_xskD34HUfUoLUqPW3AjQ2bVkmn7B1Rztg/viewform?usp=pp_url&entry.XXXXX=${encodeURIComponent(memberId)}`;
+                        btnEnquete.href = `https://docs.google.com/forms/d/e/1FAIpQLSfrSZ4xa4iJubIq_xskD34HUfUoLUqPW3AjQ2bVkmn7B1Rztg/viewform?usp=pp_url&entry.1750101212=${encodeURIComponent(memberId)}`;
                         btnEnquete.target = "_blank";
                         actionArea.appendChild(btnEnquete);
                     } else if (data.status === "deja_sorti") {
