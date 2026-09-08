@@ -32,7 +32,6 @@
             margin-bottom: 15px;
         }
 
-        /* Badges de comptage */
         .stats-container {
             display: flex;
             gap: 15px;
@@ -63,7 +62,6 @@
         .badge-out { background-color: #ef4444; }
         .badge-inscrits { background-color: #38bdf8; }
 
-        /* Conteneur principal */
         .main-card {
             background: white;
             width: 100%;
@@ -74,7 +72,6 @@
             box-sizing: border-box;
         }
 
-        /* Barre de recherche */
         .search-box {
             width: 100%;
             padding: 12px 15px;
@@ -91,7 +88,6 @@
             border-color: #38bdf8;
         }
 
-        /* Liste des membres */
         .member-list {
             display: flex;
             flex-direction: column;
@@ -154,7 +150,6 @@
             gap: 4px;
         }
 
-        /* Badges de statut par membre */
         .status-badge {
             font-size: 11px;
             padding: 3px 8px;
@@ -170,7 +165,6 @@
             font-size: 11px;
         }
 
-        /* Fenêtre Modale (Pop-up détail) */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.5); display: none; align-items: center; justify-content: center; z-index: 1000;
@@ -271,9 +265,10 @@
             let outCount = 0;
 
             allMembers.forEach(m => {
-                let st = (m.statut || "").toString().trim().toLowerCase();
-                if (st.includes("présent") || st.includes("present")) inCount++;
-                if (st.includes("sorti")) outCount++;
+                let st = (m.statut || "").toString().trim();
+                // Utilisation exacte de la casse renvoyée par le script Apps Script ("Présent" / "Sorti")
+                if (st === "Présent") inCount++;
+                if (st === "Sorti") outCount++;
             });
 
             document.getElementById("count-in").innerText = inCount;
@@ -295,20 +290,18 @@
                 let photo = (m.photoUrl && m.photoUrl.startsWith("http")) ? m.photoUrl : 'logo.png';
                 
                 let st = (m.statut || "Inscrit").toString().trim();
-                let stLower = st.toLowerCase();
                 
                 let badgeClass = "inscrit";
-                if (stLower.includes("présent") || stLower.includes("present")) badgeClass = "present";
-                if (stLower.includes("sorti")) badgeClass = "sorti";
+                if (st === "Présent") badgeClass = "present";
+                if (st === "Sorti") badgeClass = "sorti";
 
-                let heureArrivee = (m.heure && m.heure !== "--:--") ? m.heure : (m.heureIn || "");
-                
-                let heureColor = stLower.includes("sorti") ? "#991b1b" : "#065f46"; 
-                if (!stLower.includes("présent") && !stLower.includes("present") && !stLower.includes("sorti")) {
+                let heureAffichee = m.heure || "";
+                let heureColor = (st === "Sorti") ? "#991b1b" : "#065f46"; 
+                if (st !== "Présent" && st !== "Sorti") {
                     heureColor = "#64748b";
                 }
 
-                let heureDisplay = heureArrivee ? `<span class="heure-text" style="color: ${heureColor}; font-weight: bold;">${heureArrivee}</span>` : ``;
+                let heureDisplay = heureAffichee ? `<span class="heure-text" style="color: ${heureColor}; font-weight: bold;">${heureAffichee}</span>` : ``;
 
                 return `
                     <div class="member-item" onclick="openModal('${m.id}')">
@@ -337,8 +330,8 @@
             document.getElementById('modal-id').innerText = m.id || "";
             document.getElementById('modal-email').innerText = m.email || "Non renseigné";
             
-            document.getElementById('modal-in').innerText = m.heure || m.heureIn || "--:--";
-            document.getElementById('modal-out').innerText = m.heureOut || "--:--";
+            document.getElementById('modal-in').innerText = m.heure || "--:--";
+            document.getElementById('modal-out').innerText = m.statut === "Sorti" ? m.heure : "--:--";
             document.getElementById('modal-status').innerText = m.statut || "Inscrit";
 
             document.getElementById('modal').classList.add('active');
