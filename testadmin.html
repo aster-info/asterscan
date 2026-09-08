@@ -230,30 +230,41 @@
     </div>
 
     <script>
-        // Remplace par l'URL de déploiement de ton script Google Apps Script
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxr2945zVbehDI2yAH2YgSsHA2BOCM8r3whjyL2zFYuMOrJjhIm7e_9NWNkc0QARwQ/exec";
         let allMembers = [];
 
         function fetchMembers() {
+            const callbackName = "handleResponse_" + Math.floor(Math.random() * 100000);
+            
+            window[callbackName] = function(data) {
+                delete window[callbackName];
+                const oldScript = document.getElementById('jsonp-script');
+                if (oldScript) oldScript.remove();
+
+                if (data && data.success && data.members) {
+                    allMembers = data.members;
+                    updateStats();
+                    filterMembers();
+                } else {
+                    document.getElementById("member-list").innerHTML = `<p style="text-align:center; color:#94a3b8; padding: 15px;">Aucun membre trouvé.</p>`;
+                }
+            };
+
             const oldScript = document.getElementById('jsonp-script');
             if (oldScript) oldScript.remove();
 
             const script = document.createElement('script');
             script.id = 'jsonp-script';
-            script.src = `${SCRIPT_URL}?action=getmembers&callback=handleResponse&_=` + new Date().getTime();
+            script.src = `${SCRIPT_URL}?action=getMembers&_=${new Date().getTime()}&callback=${callbackName}`;
             
+            script.onerror = function() {
+                delete window[callbackName];
+                script.remove();
+                document.getElementById("member-list").innerHTML = `<p style="text-align:center; color:red; padding: 15px;">Échec du chargement.</p>`;
+            };
+
             document.head.appendChild(script);
         }
-
-        window.handleResponse = function(data) {
-            if (data && data.status === "success" && data.members && data.members.length > 0) {
-                allMembers = data.members;
-                updateStats();
-                filterMembers();
-            } else {
-                document.getElementById("member-list").innerHTML = `<p style="text-align:center; color:#94a3b8; padding: 15px;">Aucun membre trouvé.</p>`;
-            }
-        };
 
         function updateStats() {
             let inCount = 0;
@@ -290,9 +301,8 @@
                 if (stLower.includes("présent") || stLower.includes("present")) badgeClass = "present";
                 if (stLower.includes("sorti")) badgeClass = "sorti";
 
-                let heureArrivee = (m.heureIn && m.heureIn !== "--:--") ? m.heureIn : "";
+                let heureArrivee = (m.heure && m.heure !== "--:--") ? m.heure : (m.heureIn || "");
                 
-                // Couleur dynamique de l'heure assortie au statut (Vert pour Présent, Rouge pour Sorti)
                 let heureColor = stLower.includes("sorti") ? "#991b1b" : "#065f46"; 
                 if (!stLower.includes("présent") && !stLower.includes("present") && !stLower.includes("sorti")) {
                     heureColor = "#64748b";
@@ -327,7 +337,7 @@
             document.getElementById('modal-id').innerText = m.id || "";
             document.getElementById('modal-email').innerText = m.email || "Non renseigné";
             
-            document.getElementById('modal-in').innerText = m.heureIn || "--:--";
+            document.getElementById('modal-in').innerText = m.heure || m.heureIn || "--:--";
             document.getElementById('modal-out').innerText = m.heureOut || "--:--";
             document.getElementById('modal-status').innerText = m.statut || "Inscrit";
 
