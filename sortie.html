@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Contrôle d'Entrée - ASTER</title>
+    <title>Contrôle de Sortie - ASTER</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
         body {
@@ -56,19 +56,18 @@
             display: none;
         }
         .success-bg {
-            background-color: #10b981; /* Vert vif */
+            background-color: #17a2b8;
         }
         .error-bg {
-            background-color: #ef4444; /* Rouge pour les erreurs */
+            background-color: #ef4444;
         }
         .warning-bg {
-            background-color: #f97316; /* Orange vif */
+            background-color: #f97316;
             color: white;
         }
         .loading-bg {
-            background-color: #6b7280; /* Gris chargement */
+            background-color: #6b7280;
         }
-        /* Style pour la photo du membre entre le titre et le message */
         #member-photo {
             width: 100px;
             height: 100px;
@@ -103,12 +102,12 @@
 
     <div class="card">
         <img src="logo.png" alt="Logo ASTER" class="logo">
-        <h3 id="page-title">Contrôle des Entrées</h3>
+        <h3>Contrôle des Sorties</h3>
 
         <!-- Étape 1 : Le Scanner Caméra -->
         <div id="scanner-container">
             <div id="reader"></div>
-            <p style="font-size: 14px; color: #666;">Scannez le badge du membre pour valider</p>
+            <p style="font-size: 14px; color: #666;">Scannez le badge du membre pour valider la sortie</p>
         </div>
 
         <!-- Étape 2 : Le Grand Bloc de Résultat (Masqué par défaut) -->
@@ -123,59 +122,59 @@
         let html5QrCode;
         const scriptUrl = "https://script.google.com/macros/s/AKfycbxr2945zVbehDI2yAH2YgSsHA2BOCM8r3whjyL2zFYuMOrJjhIm7e_9NWNkc0QARwQ/exec";
 
-        // Détection automatique du titre selon l'URL (si la page s'appelle sortie.html ou contient action=sortie)
-        const urlParamsGlobal = new URLSearchParams(window.location.search);
-        const actionParam = urlParamsGlobal.get('action') || 'entree';
-        if (window.location.pathname.includes('sortie') || actionParam === 'sortie') {
-            document.getElementById('page-title').innerText = "Contrôle des Sorties";
-        }
-
         function verifierID(memberId) {
             document.getElementById('scanner-container').style.display = 'none';
             const resultContainer = document.getElementById('result-container');
             resultContainer.style.display = 'block';
             
-            // Masquer la photo pendant le chargement
-            document.getElementById('member-photo').style.display = 'none';
+            const imgElem = document.getElementById('member-photo');
+            imgElem.style.display = 'none';
 
             const msgBox = document.getElementById('message-box');
             msgBox.className = "status-box loading-bg";
             msgBox.style.display = "block";
-            msgBox.innerHTML = "Vérification en cours...";
+            msgBox.innerHTML = "Vérification de la sortie en cours...";
 
-            // On utilise l'action détectée (entree ou sortie)
-            fetch(`${scriptUrl}?code=${encodeURIComponent(memberId)}&action=${actionParam}`)
+            fetch(`${scriptUrl}?code=${encodeURIComponent(memberId)}&action=sortie`)
                 .then(response => response.json())
                 .then(data => {
                     const actionArea = document.getElementById('action-area');
                     actionArea.innerHTML = '';
 
-                    // Gestion de la photo du membre renvoyée par photoUrl
-                    const imgElem = document.getElementById('member-photo');
-                    if (data.photoUrl && data.photoUrl.trim() !== "") {
-                        imgElem.src = data.photoUrl;
+                    if (data.photo && data.photo.trim() !== "") {
+                        imgElem.src = data.photo;
                         imgElem.style.display = 'inline-block';
                     } else {
                         imgElem.style.display = 'none';
                     }
 
-                    // Gestion propre des différents statuts retournés par le script Google
-                    if (data.status === "success") {
+                    if (data.status === "ok") {
                         msgBox.className = "status-box success-bg";
-                        const actionLabel = (actionParam === 'sortie') ? "SORTIE VALIDÉE" : "ENTRÉE VALIDÉE";
-                        msgBox.innerHTML = `✓ ${actionLabel}<br><span style="font-size: 18px; font-weight: bold;">${data.nom}</span><br><small>ID : ${memberId}</small>`;
-                    } else if (data.status === "already_in") {
+                        msgBox.innerHTML = `✓ SORTIE VALIDÉE<br><span style="font-size: 18px; font-weight: bold;">${data.name}</span><br><small>ID : ${memberId}</small>`;
+                    } else if (data.status === "enquete_requise") {
+                        msgBox.className = "status-box warning-bg";
+                        msgBox.innerHTML = `⚠️ Sortie impossible : Enquête de satisfaction requise<br><span style="font-size: 18px; font-weight: bold;">${data.name}</span><br><small>ID : ${memberId}</small>`;
+                        
+                        // Bouton vers l'enquête Google Forms avec pré-remplissage dynamique de l'ID unique
+                        const btnEnquete = document.createElement('a');
+                        btnEnquete.className = "btn btn-blue";
+                        btnEnquete.style.marginRight = "10px";
+                        btnEnquete.innerText = "Remplir l'enquête";
+                        btnEnquete.href = `https://docs.google.com/forms/d/e/1FAIpQLSfrSZ4xa4iJubIq_xskD34HUfUoLUqPW3AjQ2bVkmn7B1Rztg/viewform?usp=pp_url&entry.1750101212=${encodeURIComponent(memberId)}`;
+                        btnEnquete.target = "_blank";
+                        actionArea.appendChild(btnEnquete);
+                    } else if (data.status === "deja_sorti") {
                         msgBox.className = "status-box warning-bg";
                         msgBox.innerHTML = `⚠️ ${data.message}`;
                     } else {
                         msgBox.className = "status-box warning-bg";
-                        msgBox.innerHTML = `⚠️ ${data.message || "Erreur lors du contrôle."}`;
+                        msgBox.innerHTML = `⚠️ ${data.message || "Sortie impossible ou membre non présent."}`;
                     }
 
                     const btn = document.createElement('button');
                     btn.className = "btn btn-blue";
                     btn.innerText = "Scanner un autre";
-                    btn.onclick = () => location.href = window.location.pathname + (actionParam === 'sortie' ? '?action=sortie' : '');
+                    btn.onclick = () => location.href = "sortie.html";
                     actionArea.appendChild(btn);
                 })
                 .catch(error => {
@@ -184,7 +183,7 @@
                     const btn = document.createElement('button');
                     btn.className = "btn btn-blue";
                     btn.innerText = "Réessayer";
-                    btn.onclick = () => location.href = window.location.pathname + (actionParam === 'sortie' ? '?action=sortie' : '');
+                    btn.onclick = () => location.href = "sortie.html";
                     document.getElementById('action-area').appendChild(btn);
                     console.error('Erreur:', error);
                 });
