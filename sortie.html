@@ -90,6 +90,7 @@
             cursor: pointer;
             color: white;
             margin-top: 5px;
+            margin-right: 5px;
         }
         .btn-blue {
             background-color: #007bff;
@@ -151,7 +152,7 @@
                     const actionArea = document.getElementById('action-area');
                     actionArea.innerHTML = '';
 
-                    // Gestion de la photo avec la bonne propriété "data.photo"
+                    // Gestion de la photo avec la propriété "data.photo"
                     if (data.photo && data.photo.trim() !== "") {
                         imgElem.src = data.photo;
                         imgElem.style.display = 'inline-block';
@@ -159,20 +160,51 @@
                         imgElem.style.display = 'none';
                     }
 
-                    // Validation basée sur le statut "ok" de votre script Apps Script
+                    // Validation selon les différents statuts renvoyés par Apps Script
                     if (data.status === "ok" || data.status === "success") {
                         msgBox.className = "status-box success-bg";
                         msgBox.innerHTML = `✓ SORTIE VALIDÉE<br><span style="font-size: 18px; font-weight: bold;">${data.name || data.nom}</span><br><small>ID : ${memberId}</small>`;
+                        
+                        // Bouton standard pour continuer
+                        const btn = document.createElement('button');
+                        btn.className = "btn btn-blue";
+                        btn.innerText = "Scanner un autre";
+                        btn.onclick = () => location.href = "sortie.html";
+                        actionArea.appendChild(btn);
+
+                    } else if (data.status === "enquete_requise") {
+                        // Cas où l'enquête n'est pas remplie (Alerte orange + Bouton redirection formulaire)
+                        msgBox.className = "status-box warning-bg";
+                        msgBox.innerHTML = `⚠️ Veuillez remplir l'enquête de satisfaction avant de sortir.<br><span style="font-size: 18px; font-weight: bold;">${data.name || ""}</span>`;
+
+                        // Bouton de redirection vers l'enquête pré-remillie
+                        if (data.formUrl) {
+                            const btnEnquete = document.createElement('a');
+                            btnEnquete.className = "btn btn-blue";
+                            btnEnquete.innerText = "Remplir l'enquête";
+                            btnEnquete.href = data.formUrl;
+                            btnEnquete.target = "_blank"; // Ouvre dans un nouvel onglet ou directement
+                            actionArea.appendChild(btnEnquete);
+                        }
+
+                        // Bouton pour scanner un autre membre
+                        const btnScan = document.createElement('button');
+                        btnScan.className = "btn btn-blue";
+                        btnScan.style.backgroundColor = "#6c757d"; // Optionnel : couleur différente pour différencier
+                        btnScan.innerText = "Scanner un autre";
+                        btnScan.onclick = () => location.href = "sortie.html";
+                        actionArea.appendChild(btnScan);
+
                     } else {
                         msgBox.className = "status-box warning-bg";
                         msgBox.innerHTML = `⚠️ ${data.message || "Erreur lors du contrôle."}`;
+                        
+                        const btn = document.createElement('button');
+                        btn.className = "btn btn-blue";
+                        btn.innerText = "Scanner un autre";
+                        btn.onclick = () => location.href = "sortie.html";
+                        actionArea.appendChild(btn);
                     }
-
-                    const btn = document.createElement('button');
-                    btn.className = "btn btn-blue";
-                    btn.innerText = "Scanner un autre";
-                    btn.onclick = () => location.href = "sortie.html";
-                    actionArea.appendChild(btn);
                 })
                 .catch(error => {
                     msgBox.className = "status-box error-bg";
