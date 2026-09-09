@@ -56,19 +56,18 @@
             display: none;
         }
         .success-bg {
-            background-color: #10b981; /* Vert vif */
+            background-color: #10b981;
         }
         .error-bg {
-            background-color: #ef4444; /* Rouge pour les erreurs techniques */
+            background-color: #ef4444;
         }
         .warning-bg {
-            background-color: #f97316; /* Orange vif et bien voyant */
+            background-color: #f97316;
             color: white;
         }
         .loading-bg {
-            background-color: #6b7280; /* Gris chargement */
+            background-color: #6b7280;
         }
-        /* Style pour la photo du membre */
         #member-photo {
             width: 100px;
             height: 100px;
@@ -128,7 +127,6 @@
             const resultContainer = document.getElementById('result-container');
             resultContainer.style.display = 'block';
             
-            // Masquer la photo pendant le chargement
             document.getElementById('member-photo').style.display = 'none';
 
             const msgBox = document.getElementById('message-box');
@@ -142,7 +140,6 @@
                     const actionArea = document.getElementById('action-area');
                     actionArea.innerHTML = '';
 
-                    // Gestion de l'affichage de la photo si elle est présente dans le JSON
                     const imgElem = document.getElementById('member-photo');
                     if (data.photo && data.photo.trim() !== "") {
                         imgElem.src = data.photo;
@@ -151,13 +148,12 @@
                         imgElem.style.display = 'none';
                     }
 
-                    // CORRECTION ICI : Gestion propre des différents statuts retournés par le script
                     if (data.status === "ok") {
                         msgBox.className = "status-box success-bg";
                         msgBox.innerHTML = `✓ ENTRÉE VALIDÉE<br><span style="font-size: 18px; font-weight: bold;">${data.name}</span><br><small>ID : ${memberId}</small>`;
-                    } else if (data.status === "deja_present(e)") {
+                    } else if (data.status === "deja_enregistre") {
                         msgBox.className = "status-box warning-bg";
-                        msgBox.innerHTML = `⚠️ ${data.message}`;
+                        msgBox.innerHTML = `⚠️ DÉJÀ ENREGISTRÉ<br><span style="font-size: 18px; font-weight: bold;">${data.name}</span><br><small>Ce membre a déjà pointé son entrée.</small>`;
                     } else {
                         msgBox.className = "status-box warning-bg";
                         msgBox.innerHTML = `⚠️ ${data.message || data.error || "Erreur lors du contrôle."}`;
