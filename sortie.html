@@ -105,17 +105,15 @@
         <img src="logo.png" alt="Logo ASTER" class="logo">
         <h3 id="page-title">Contrôle des Sorties</h3>
 
-        <!-- Photo positionnée entre le titre et le bloc de résultat -->
-        <img id="member-photo" src="" alt="Photo du membre">
-
         <!-- Étape 1 : Le Scanner Caméra -->
         <div id="scanner-container">
             <div id="reader"></div>
             <p style="font-size: 14px; color: #666;">Scannez le badge du membre pour valider la sortie</p>
         </div>
 
-        <!-- Étape 2 : Le Grand Bloc de Résultat -->
+        <!-- Étape 2 : Le Grand Bloc de Résultat (Contient la photo et le message) -->
         <div id="result-container" style="display: none;">
+            <img id="member-photo" src="" alt="Photo du membre">
             <div id="message-box" class="status-box"></div>
             <div id="action-area"></div>
         </div>
@@ -138,8 +136,8 @@
             const resultContainer = document.getElementById('result-container');
             resultContainer.style.display = 'block';
             
-            // Masquer la photo pendant le chargement
-            document.getElementById('member-photo').style.display = 'none';
+            const imgElem = document.getElementById('member-photo');
+            imgElem.style.display = 'none';
 
             const msgBox = document.getElementById('message-box');
             msgBox.className = "status-box loading-bg";
@@ -153,19 +151,18 @@
                     const actionArea = document.getElementById('action-area');
                     actionArea.innerHTML = '';
 
-                    // Affichage de la photo si elle existe
-                    const imgElem = document.getElementById('member-photo');
-                    if (data.photoUrl && data.photoUrl.trim() !== "") {
-                        imgElem.src = data.photoUrl;
+                    // Gestion de la photo avec la bonne propriété "data.photo"
+                    if (data.photo && data.photo.trim() !== "") {
+                        imgElem.src = data.photo;
                         imgElem.style.display = 'inline-block';
                     } else {
                         imgElem.style.display = 'none';
                     }
 
-                    // Validation et affichage du design exact demandé
-                    if (data.status === "success") {
+                    // Validation basée sur le statut "ok" de votre script Apps Script
+                    if (data.status === "ok" || data.status === "success") {
                         msgBox.className = "status-box success-bg";
-                        msgBox.innerHTML = `✓ SORTIE VALIDÉE<br><span style="font-size: 18px; font-weight: bold;">${data.nom}</span><br><small>ID : ${memberId}</small>`;
+                        msgBox.innerHTML = `✓ SORTIE VALIDÉE<br><span style="font-size: 18px; font-weight: bold;">${data.name || data.nom}</span><br><small>ID : ${memberId}</small>`;
                     } else {
                         msgBox.className = "status-box warning-bg";
                         msgBox.innerHTML = `⚠️ ${data.message || "Erreur lors du contrôle."}`;
@@ -174,7 +171,7 @@
                     const btn = document.createElement('button');
                     btn.className = "btn btn-blue";
                     btn.innerText = "Scanner un autre";
-                    btn.onclick = () => location.href = window.location.pathname + '?action=sortie';
+                    btn.onclick = () => location.href = "sortie.html";
                     actionArea.appendChild(btn);
                 })
                 .catch(error => {
@@ -183,7 +180,7 @@
                     const btn = document.createElement('button');
                     btn.className = "btn btn-blue";
                     btn.innerText = "Réessayer";
-                    btn.onclick = () => location.href = window.location.pathname + '?action=sortie';
+                    btn.onclick = () => location.href = "sortie.html";
                     actionArea.appendChild(btn);
                     console.error('Erreur:', error);
                 });
