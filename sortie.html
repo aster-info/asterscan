@@ -150,26 +150,26 @@
                     const actionArea = document.getElementById('action-area');
                     actionArea.innerHTML = '';
 
-                    // Restauration de l'ancien mode d'affichage de la photo (data.photo et non photoUrl)
+                    // Gestion de la photo du membre renvoyée par photoUrl
                     const imgElem = document.getElementById('member-photo');
-                    if (data.photo && data.photo.trim() !== "") {
-                        imgElem.src = data.photo;
+                    if (data.photoUrl && data.photoUrl.trim() !== "") {
+                        imgElem.src = data.photoUrl;
                         imgElem.style.display = 'inline-block';
                     } else {
                         imgElem.style.display = 'none';
                     }
 
-                    // Gestion propre des différents statuts retournés par le script
-                    if (data.status === "ok") {
+                    // Gestion propre des différents statuts retournés par le script Google
+                    if (data.status === "success") {
                         msgBox.className = "status-box success-bg";
                         const actionLabel = (actionParam === 'sortie') ? "SORTIE VALIDÉE" : "ENTRÉE VALIDÉE";
-                        msgBox.innerHTML = `✓ ${actionLabel}<br><span style="font-size: 18px; font-weight: bold;">${data.name}</span><br><small>ID : ${memberId}</small>`;
-                    } else if (data.status === "deja_present(e)" || data.status === "already_in") {
+                        msgBox.innerHTML = `✓ ${actionLabel}<br><span style="font-size: 18px; font-weight: bold;">${data.nom}</span><br><small>ID : ${memberId}</small>`;
+                    } else if (data.status === "already_in") {
                         msgBox.className = "status-box warning-bg";
                         msgBox.innerHTML = `⚠️ ${data.message}`;
                     } else {
                         msgBox.className = "status-box warning-bg";
-                        msgBox.innerHTML = `⚠️ ${data.message || data.error || "Erreur lors du contrôle."}`;
+                        msgBox.innerHTML = `⚠️ ${data.message || "Erreur lors du contrôle."}`;
                     }
 
                     const btn = document.createElement('button');
@@ -184,7 +184,7 @@
                     const btn = document.createElement('button');
                     btn.className = "btn btn-blue";
                     btn.innerText = "Réessayer";
-                    btn.onclick = () => location.href = window.location.pathname;
+                    btn.onclick = () => location.href = window.location.pathname + (actionParam === 'sortie' ? '?action=sortie' : '');
                     document.getElementById('action-area').appendChild(btn);
                     console.error('Erreur:', error);
                 });
