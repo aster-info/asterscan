@@ -266,7 +266,6 @@
 
             allMembers.forEach(m => {
                 let st = (m.statut || "").toString().trim();
-                // Utilisation exacte de la casse renvoyée par le script Apps Script ("Présent" / "Sorti")
                 if (st === "Présent") inCount++;
                 if (st === "Sorti") outCount++;
             });
@@ -330,8 +329,8 @@
             document.getElementById('modal-id').innerText = m.id || "";
             document.getElementById('modal-email').innerText = m.email || "Non renseigné";
             
-            document.getElementById('modal-in').innerText = m.heure || "--:--";
-            document.getElementById('modal-out').innerText = m.statut === "Sorti" ? m.heure : "--:--";
+            document.getElementById('modal-in').innerText = m.arrivee || "--:--";
+            document.getElementById('modal-out').innerText = m.depart || "--:--";
             document.getElementById('modal-status').innerText = m.statut || "Inscrit";
 
             document.getElementById('modal').classList.add('active');
