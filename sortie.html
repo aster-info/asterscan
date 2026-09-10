@@ -105,13 +105,19 @@
         <img src="logo.png" alt="Logo ASTER" class="logo">
         <h3 id="page-title">Contrôle des Sorties</h3>
 
-        <!-- Étape 1 : Le Scanner Caméra -->
+        <!-- ============================================================================== -->
+        <!-- [BLOC HTML] : Étape 1 - Le Scanner Caméra -->
+        <!-- Contient la zone vidéo du lecteur QR code et le texte d'aide associé. -->
+        <!-- ============================================================================== -->
         <div id="scanner-container">
             <div id="reader"></div>
             <p style="font-size: 14px; color: #666;">Scannez le badge du membre pour valider la sortie</p>
         </div>
 
-        <!-- Étape 2 : Le Grand Bloc de Résultat -->
+        <!-- ============================================================================== -->
+        <!-- [BLOC HTML] : Étape 2 - Le Grand Bloc de Résultat -->
+        <!-- Affiche la photo du membre, la boîte de statut dynamique et la zone d'actions. -->
+        <!-- ============================================================================== -->
         <div id="result-container" style="display: none;">
             <img id="member-photo" src="" alt="Photo du membre">
             <div id="message-box" class="status-box"></div>
@@ -130,7 +136,15 @@
             actionParam = 'sortie';
         }
 
+        /**
+         * ==============================================================================
+         * [BLOC JS] : Fonction de vérification de l'ID scanné auprès du serveur Google Apps Script
+         * Gère l'affichage du chargement, l'appel fetch, l'affichage de la photo du membre,
+         * et l'injection du nom, de l'ID et du titre dans les différents cas (succès, enquête, erreur).
+         * ==============================================================================
+         */
         function verifierID(memberId) {
+            // [BLOC ISOLÉ] : Masquage du conteneur scanner et affichage du conteneur de résultat
             document.getElementById('scanner-container').style.display = 'none';
             const resultContainer = document.getElementById('result-container');
             resultContainer.style.display = 'block';
@@ -138,17 +152,20 @@
             const imgElem = document.getElementById('member-photo');
             imgElem.style.display = 'none';
 
+            // [BLOC ISOLÉ] : État de chargement initial dans la boîte de message
             const msgBox = document.getElementById('message-box');
             msgBox.className = "status-box loading-bg";
             msgBox.style.display = "block";
             msgBox.innerHTML = "Vérification en cours...";
 
+            // Requête vers l'API Google Apps Script
             fetch(`${scriptUrl}?code=${encodeURIComponent(memberId)}&action=${actionParam}`)
                 .then(response => response.json())
                 .then(data => {
                     const actionArea = document.getElementById('action-area');
                     actionArea.innerHTML = '';
 
+                    // [BLOC ISOLÉ] : Gestion de l'affichage de la photo du membre si elle existe
                     if (data.photo && data.photo.trim() !== "") {
                         imgElem.src = data.photo;
                         imgElem.style.display = 'inline-block';
@@ -156,10 +173,11 @@
                         imgElem.style.display = 'none';
                     }
 
+                    // [BLOC ISOLÉ] : Traitement du cas où la sortie est validée avec succès
                     if (data.status === "ok" || data.status === "success") {
                         msgBox.className = "status-box success-bg";
-                        // [INTÉGRATION ID] : Ajout de l'ID en texte plus petit sous le nom pour la validation standard
-                        msgBox.innerHTML = `✓ SORTIE VALIDÉE<br><span style="font-size: 18px; font-weight: bold;">${data.name || data.nom}</span><br><span style="font-size: 13px; opacity: 0.85;">ID : ${memberId}</span>`;
+                        // [INTÉGRATION] : Ajout du Nom, de l'ID et du Titre (colonne B) sous le message de succès
+                        msgBox.innerHTML = `✓ SORTIE VALIDÉE<br><span style="font-size: 18px; font-weight: bold;">${data.name || data.nom}</span><br><span style="font-size: 13px; opacity: 0.85;">ID : ${memberId}</span><br><span style="font-size: 13px; font-style: italic; opacity: 0.9;">${data.titre || ""}</span>`;
                         
                         const btn = document.createElement('button');
                         btn.className = "btn btn-blue";
@@ -167,10 +185,11 @@
                         btn.onclick = () => location.href = "sortie.html";
                         actionArea.appendChild(btn);
 
+                    // [BLOC ISOLÉ] : Traitement du cas où l'enquête de satisfaction est requise avant la sortie
                     } else if (data.status === "enquete_requise") {
                         msgBox.className = "status-box warning-bg";
-                        // [INTÉGRATION ID] : Ajout de l'ID en texte plus petit sous le nom pour le cas de l'enquête requise
-                        msgBox.innerHTML = `⚠️ Veuillez remplir l'enquête de satisfaction avant de sortir.<br><span style="font-size: 18px; font-weight: bold;">${data.name || ""}</span><br><span style="font-size: 13px; opacity: 0.85;">ID : ${memberId}</span>`;
+                        // [INTÉGRATION] : Ajout du Nom, de l'ID et du Titre (colonne B) pour le bloc d'enquête requise
+                        msgBox.innerHTML = `⚠️ Veuillez remplir l'enquête de satisfaction avant de sortir.<br><span style="font-size: 18px; font-weight: bold;">${data.name || ""}</span><br><span style="font-size: 13px; opacity: 0.85;">ID : ${memberId}</span><br><span style="font-size: 13px; font-style: italic; opacity: 0.9;">${data.titre || ""}</span>`;
 
                         if (data.redirectUrl) {
                             const btnEnquete = document.createElement('a');
@@ -188,18 +207,22 @@
                         btnScan.onclick = () => location.href = "sortie.html";
                         actionArea.appendChild(btnScan);
 
+                    // [BLOC ISOLÉ] : Traitement des autres cas (déjà sorti, non présent, etc.)
                     } else {
                         msgBox.className = "status-box warning-bg";
-                        msgBox.innerHTML = `⚠️ ${data.message || "Erreur lors du contrôle."}`;
+                        // [INTÉGRATION] : Affichage sécurisé incluant également le titre si disponible dans la réponse
+                        let titreHtml = data.titre ? `<br><span style="font-size: 13px; font-style: italic; opacity: 0.9;">${data.titre}</span>` : "";
+                        msgBox.innerHTML = `⚠️ ${data.message || "Erreur lors du contrôle."}${titreHtml}`;
                         
                         const btn = document.createElement('button');
                         btn.className = "btn btn-blue";
                         btn.innerText = "Scanner un autre";
                         btn.onclick = () => location.href = "sortie.html";
-                        actionArea.appendChild(btn);
+                        actionArea.appendChild(btn).focus();
                     }
                 })
                 .catch(error => {
+                    // [BLOC ISOLÉ] : Gestion des erreurs de connexion au serveur
                     msgBox.className = "status-box error-bg";
                     msgBox.innerHTML = "❌ Erreur de connexion au serveur.";
                     const btn = document.createElement('button');
@@ -211,6 +234,12 @@
                 });
         }
 
+        /**
+         * ==============================================================================
+         * [BLOC JS] : Initialisation de la page au chargement (window.onload)
+         * Vérifie si un paramètre d'URL est présent ou démarre le scanner de la caméra.
+         * ==============================================================================
+         */
         window.onload = function() {
             const urlParams = new URLSearchParams(window.location.search);
             const memberId = urlParams.get('id') || urlParams.get('code');
