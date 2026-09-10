@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
     <!-- ======================================================== -->
-    <!-- 1. LA STRUCTURE HTML ET CONFIGURATION GÉNÉRALE SORTIE        -->
+    <!-- 1. LA STRUCTURE HTML ET CONFIGURATION GÉNÉRALE  SORTIE        -->
     <!-- ======================================================== -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -147,7 +147,6 @@
         /**
          * ==============================================================================
          * [BLOC JS] : Fonction de vérification de l'ID scanné (Sortie)
-         * Ordre d'affichage dans la boîte : Nom -> ID -> Titre -> Message/Statut en bas
          * ==============================================================================
          */
         function verifierID(memberId) {
@@ -176,20 +175,22 @@
                         imgElem.style.display = 'none';
                     }
 
-                    // [BLOC ISOLÉ] : Préparation des variables communes (Nom, ID, Titre)
+                    // [BLOC ISOLÉ] : Préparation des variables communes (Nom, ID, Titre) affichées en haut du bloc de message
                     const nomMembre = data.name || data.nom || "";
                     const idMembre = memberId;
                     const titreMembre = data.titre ? `<span style="font-size: 13px; font-style: italic; opacity: 0.9; display: block; margin-top: 2px;">${data.titre}</span>` : "";
 
+                    const enteteMembreHtml = `
+                        <span style="font-size: 18px; font-weight: bold; display: block;">${nomMembre}</span>
+                        <span style="font-size: 13px; opacity: 0.85; display: block;">ID : ${idMembre}</span>
+                        ${titreMembre}
+                        <div style="margin-top: 10px; font-weight: 600; border-top: 1px solid rgba(255,255,255,0.3); padding-top: 8px;">
+                    `;
+
                     // [BLOC ISOLÉ] : Cas 1 - Sortie validée avec succès
                     if (data.status === "ok" || data.status === "success") {
                         msgBox.className = "status-box success-bg";
-                        msgBox.innerHTML = `
-                            <span style="font-size: 18px; font-weight: bold; display: block;">${nomMembre}</span>
-                            <span style="font-size: 13px; opacity: 0.85; display: block;">ID : ${idMembre}</span>
-                            ${titreMembre}
-                            <div style="margin-top: 10px; font-weight: 600; border-top: 1px solid rgba(255,255,255,0.3); padding-top: 8px;">✓ SORTIE VALIDÉE</div>
-                        `;
+                        msgBox.innerHTML = `${enteteMembreHtml}✓ SORTIE VALIDÉE</div>`;
                         
                         const btn = document.createElement('button');
                         btn.className = "btn btn-blue";
@@ -200,19 +201,16 @@
                     // [BLOC ISOLÉ] : Cas 2 - Enquête de satisfaction requise avant de sortir
                     } else if (data.status === "enquete_requise") {
                         msgBox.className = "status-box warning-bg";
-                        msgBox.innerHTML = `
-                            <span style="font-size: 18px; font-weight: bold; display: block;">${nomMembre}</span>
-                            <span style="font-size: 13px; opacity: 0.85; display: block;">ID : ${idMembre}</span>
-                            ${titreMembre}
-                            <div style="margin-top: 10px; font-weight: 600; border-top: 1px solid rgba(255,255,255,0.3); padding-top: 8px;">⚠️ Veuillez remplir l'enquête de satisfaction avant de sortir</div>
-                        `;
+                        msgBox.innerHTML = `${enteteMembreHtml}⚠️ Veuillez remplir l'enquête de satisfaction avant de sortir</div>`;
 
                         if (data.redirectUrl) {
-                            const btnEnquete = document.createElement('a');
+                            const btnEnquete = document.createElement('button');
                             btnEnquete.className = "btn btn-blue";
                             btnEnquete.innerText = "Remplir l'enquête";
-                            btnEnquete.href = data.redirectUrl;
-                            btnEnquete.target = "_blank";
+                            btnEnquete.onclick = () => {
+                                window.open(data.redirectUrl, '_blank');
+                                location.href = "sortie.html";
+                            };
                             actionArea.appendChild(btnEnquete);
                         }
 
@@ -223,16 +221,11 @@
                         btnScan.onclick = () => location.href = "sortie.html";
                         actionArea.appendChild(btnScan);
 
-                    // [BLOC ISOLÉ] : Cas 3 - Autres erreurs ou messages
+                    // [BLOC ISOLÉ] : Cas 3 - Autres erreurs ou messages (déjà sorti, non présent, etc.)
                     } else {
                         msgBox.className = "status-box warning-bg";
                         const messageErreur = data.message || "Erreur lors du contrôle.";
-                        msgBox.innerHTML = `
-                            <span style="font-size: 18px; font-weight: bold; display: block;">${nomMembre}</span>
-                            <span style="font-size: 13px; opacity: 0.85; display: block;">ID : ${idMembre}</span>
-                            ${titreMembre}
-                            <div style="margin-top: 10px; font-weight: 600; border-top: 1px solid rgba(255,255,255,0.3); padding-top: 8px;">⚠️ ${messageErreur}</div>
-                        `;
+                        msgBox.innerHTML = `${enteteMembreHtml}⚠️ ${messageErreur}</div>`;
                         
                         const btn = document.createElement('button');
                         btn.className = "btn btn-blue";
