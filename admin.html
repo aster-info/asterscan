@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
+    <!-- ======================================================== -->
+    <!-- 1. LA STRUCTURE HTML ET CONFIGURATION GÉNÉRALE           -->
+    <!-- ======================================================== -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Administration - ASTER</title>
@@ -186,18 +189,30 @@
 </head>
 <body>
 
+    <!-- ======================================================== -->
+    <!-- A. LE CONTENEUR DU LOGO                                  -->
+    <!-- ======================================================== -->
     <div class="logo-container">
         <img src="logo.png" alt="Logo ASTER" onerror="this.src='https://via.placeholder.com/120'">
     </div>
 
+    <!-- ======================================================== -->
+    <!-- B. LE TITRE PRINCIPAL                                    -->
+    <!-- ======================================================== -->
     <h1>Administration</h1>
 
+    <!-- ======================================================== -->
+    <!-- C. LE BLOC DES STATISTIQUES GLOBALES                     -->
+    <!-- ======================================================== -->
     <div class="stats-container">
         <div class="stat-badge">In: <span class="badge-in" id="count-in">0</span></div>
         <div class="stat-badge">Out: <span class="badge-out" id="count-out">0</span></div>
         <div class="stat-badge">Inscrits: <span class="badge-inscrits" id="count-inscrits">0</span></div>
     </div>
 
+    <!-- ======================================================== -->
+    <!-- D. LA CARTE PRINCIPALE ET LA BARRE DE RECHERCHE          -->
+    <!-- ======================================================== -->
     <div class="main-card">
         <input type="text" id="search-input" class="search-box" placeholder="Rechercher un membre par nom ou ID..." oninput="filterMembers()">
         
@@ -206,13 +221,16 @@
         </div>
     </div>
 
+    <!-- ======================================================== -->
+    <!-- E. LA FENÊTRE MODALE (POPUP DE DÉTAIL D'UN MEMBRE)      -->
+    <!-- ======================================================== -->
     <div id="modal" class="modal-overlay" onclick="closeModal()">
         <div class="modal" onclick="event.stopPropagation()">
             <img id="modal-photo" src="logo.png" alt="Photo" onerror="this.src='logo.png'">
             <h3 id="modal-name">Nom Membre</h3>
             <div id="modal-id" style="font-size: 12px; color: #64748b; font-weight: 600;">ID</div>
-            <!-- Ajout de l'élément pour le titre -->
-            <div id="modal-titre" style="font-size: 13px; color: #4b5563; font-style: italic; margin-bottom: 10px;"></div>
+            <!-- Titre / fonction en bleu -->
+            <div id="modal-titre" style="font-size: 13px; color: #0284c7; font-style: italic; margin-bottom: 10px;"></div>
             
             <div class="modal-details">
                 <p>📧 Email : <span id="modal-email" style="font-size: 13px; font-weight: 500; color: #0284c7;">--</span></p>
@@ -225,10 +243,15 @@
         </div>
     </div>
 
+    <!-- ======================================================== -->
+    <!-- 3. LE BLOC DE SCRIPTS JAVASCRIPT                         -->
+    <!-- ======================================================== -->
     <script>
+        /* A. Initialisation et configuration globale */
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwUweBhU2D-B9nFFOYF5hWe0m48oCHhGZXVK1-sqyYllMLdwGnrDzjAXi9hbY0mWotq/exec";
         let allMembers = [];
 
+        /* B. Récupération des données (JSONP) : fetchMembers() */
         function fetchMembers() {
             const callbackName = "handleResponse_" + Math.floor(Math.random() * 100000);
             
@@ -262,6 +285,7 @@
             document.head.appendChild(script);
         }
 
+        /* C. Calcul des statistiques : updateStats() */
         function updateStats() {
             let inCount = 0;
             let outCount = 0;
@@ -277,6 +301,7 @@
             document.getElementById("count-inscrits").innerText = allMembers.length;
         }
 
+        /* D. Affichage de la liste : renderList(members) */
         function renderList(members) {
             const container = document.getElementById("member-list");
             if (members.length === 0) {
@@ -322,6 +347,7 @@
             }).join('');
         }
 
+        /* E. Gestion de la modale : openModal(memberId) et closeModal() */
         function openModal(memberId) {
             const m = allMembers.find(item => item.id === memberId);
             if (!m) return;
@@ -329,7 +355,7 @@
             document.getElementById('modal-photo').src = (m.photoUrl && m.photoUrl.startsWith('http')) ? m.photoUrl : 'logo.png';
             document.getElementById('modal-name').innerText = m.nom || "Membre";
             document.getElementById('modal-id').innerText = m.id || "";
-            document.getElementById('modal-titre').innerText = m.titre || ""; // Remplissage du titre
+            document.getElementById('modal-titre').innerText = m.titre || "";
             document.getElementById('modal-email').innerText = m.email || "Non renseigné";
             
             document.getElementById('modal-in').innerText = m.arrivee || "--:--";
@@ -343,6 +369,7 @@
             document.getElementById('modal').classList.remove('active');
         }
 
+        /* F. Filtrage par recherche : filterMembers() */
         function filterMembers() {
             const query = document.getElementById("search-input").value.toLowerCase().trim();
             const filtered = allMembers.filter(m => {
@@ -353,6 +380,7 @@
             renderList(filtered);
         }
 
+        /* G. Automatisation périodique (lancement initial et intervalle de rafraîchissement) */
         fetchMembers();
         setInterval(fetchMembers, 5000);
     </script>
