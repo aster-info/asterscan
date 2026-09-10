@@ -158,7 +158,8 @@
 
                     if (data.status === "ok" || data.status === "success") {
                         msgBox.className = "status-box success-bg";
-                        msgBox.innerHTML = `✓ SORTIE VALIDÉE<br><span style="font-size: 18px; font-weight: bold;">${data.name || data.nom}</span><br><small>ID : ${memberId}</small>`;
+                        // [INTÉGRATION ID] : Ajout de l'ID en texte plus petit sous le nom pour la validation standard
+                        msgBox.innerHTML = `✓ SORTIE VALIDÉE<br><span style="font-size: 18px; font-weight: bold;">${data.name || data.nom}</span><br><span style="font-size: 13px; opacity: 0.85;">ID : ${memberId}</span>`;
                         
                         const btn = document.createElement('button');
                         btn.className = "btn btn-blue";
@@ -168,9 +169,9 @@
 
                     } else if (data.status === "enquete_requise") {
                         msgBox.className = "status-box warning-bg";
-                        msgBox.innerHTML = `⚠️ Veuillez remplir l'enquête de satisfaction avant de sortir.<br><span style="font-size: 18px; font-weight: bold;">${data.name || ""}</span>`;
+                        // [INTÉGRATION ID] : Ajout de l'ID en texte plus petit sous le nom pour le cas de l'enquête requise
+                        msgBox.innerHTML = `⚠️ Veuillez remplir l'enquête de satisfaction avant de sortir.<br><span style="font-size: 18px; font-weight: bold;">${data.name || ""}</span><br><span style="font-size: 13px; opacity: 0.85;">ID : ${memberId}</span>`;
 
-                        // CORRECTION ICI : Utilisation de data.redirectUrl au lieu de data.formUrl
                         if (data.redirectUrl) {
                             const btnEnquete = document.createElement('a');
                             btnEnquete.className = "btn btn-blue";
