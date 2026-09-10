@@ -1,9 +1,13 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
+    <!-- ======================================================== -->
+    <!-- 1. LA STRUCTURE HTML ET CONFIGURATION GÉNÉRALE  SORTIE       -->
+    <!-- ======================================================== -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Contrôle des Sorties - ASTER</title>
+    <!-- Intégration de la bibliothèque de scan QR Code -->
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
         body {
@@ -101,13 +105,15 @@
 </head>
 <body>
 
+    <!-- ======================================================== -->
+    <!-- 2. CONTENEUR PRINCIPAL DE LA CARTE                       -->
+    <!-- ======================================================== -->
     <div class="card">
         <img src="logo.png" alt="Logo ASTER" class="logo">
         <h3 id="page-title">Contrôle des Sorties</h3>
 
         <!-- ============================================================================== -->
         <!-- [BLOC HTML] : Étape 1 - Le Scanner Caméra -->
-        <!-- Contient la zone vidéo du lecteur QR code et le texte d'aide associé. -->
         <!-- ============================================================================== -->
         <div id="scanner-container">
             <div id="reader"></div>
@@ -116,7 +122,6 @@
 
         <!-- ============================================================================== -->
         <!-- [BLOC HTML] : Étape 2 - Le Grand Bloc de Résultat -->
-        <!-- Affiche la photo du membre, la boîte de statut dynamique et la zone d'actions. -->
         <!-- ============================================================================== -->
         <div id="result-container" style="display: none;">
             <img id="member-photo" src="" alt="Photo du membre">
@@ -125,6 +130,9 @@
         </div>
     </div>
 
+    <!-- ======================================================== -->
+    <!-- 3. LOGIQUE JAVASCRIPT                                    -->
+    <!-- ======================================================== -->
     <script>
         let html5QrCode;
         const scriptUrl = "https://script.google.com/macros/s/AKfycbwUweBhU2D-B9nFFOYF5hWe0m48oCHhGZXVK1-sqyYllMLdwGnrDzjAXi9hbY0mWotq/exec";
@@ -138,13 +146,11 @@
 
         /**
          * ==============================================================================
-         * [BLOC JS] : Fonction de vérification de l'ID scanné auprès du serveur Google Apps Script
-         * Gère l'affichage du chargement, l'appel fetch, l'affichage de la photo du membre,
-         * et l'injection du nom, de l'ID et du titre dans les différents cas (succès, enquête, erreur).
+         * [BLOC JS] : Fonction de vérification de l'ID scanné (Sortie)
+         * Ordre d'affichage dans la boîte : Nom -> ID -> Titre -> Message/Statut en bas
          * ==============================================================================
          */
         function verifierID(memberId) {
-            // [BLOC ISOLÉ] : Masquage du conteneur scanner et affichage du conteneur de résultat
             document.getElementById('scanner-container').style.display = 'none';
             const resultContainer = document.getElementById('result-container');
             resultContainer.style.display = 'block';
@@ -152,20 +158,17 @@
             const imgElem = document.getElementById('member-photo');
             imgElem.style.display = 'none';
 
-            // [BLOC ISOLÉ] : État de chargement initial dans la boîte de message
             const msgBox = document.getElementById('message-box');
             msgBox.className = "status-box loading-bg";
             msgBox.style.display = "block";
             msgBox.innerHTML = "Vérification en cours...";
 
-            // Requête vers l'API Google Apps Script
             fetch(`${scriptUrl}?code=${encodeURIComponent(memberId)}&action=${actionParam}`)
                 .then(response => response.json())
                 .then(data => {
                     const actionArea = document.getElementById('action-area');
                     actionArea.innerHTML = '';
 
-                    // [BLOC ISOLÉ] : Gestion de l'affichage de la photo du membre si elle existe
                     if (data.photo && data.photo.trim() !== "") {
                         imgElem.src = data.photo;
                         imgElem.style.display = 'inline-block';
@@ -173,11 +176,20 @@
                         imgElem.style.display = 'none';
                     }
 
-                    // [BLOC ISOLÉ] : Traitement du cas où la sortie est validée avec succès
+                    // [BLOC ISOLÉ] : Préparation des variables communes (Nom, ID, Titre)
+                    const nomMembre = data.name || data.nom || "";
+                    const idMembre = memberId;
+                    const titreMembre = data.titre ? `<span style="font-size: 13px; font-style: italic; opacity: 0.9; display: block; margin-top: 2px;">${data.titre}</span>` : "";
+
+                    // [BLOC ISOLÉ] : Cas 1 - Sortie validée avec succès
                     if (data.status === "ok" || data.status === "success") {
                         msgBox.className = "status-box success-bg";
-                        // [INTÉGRATION] : Ajout du Nom, de l'ID et du Titre (colonne B) sous le message de succès
-                        msgBox.innerHTML = `✓ SORTIE VALIDÉE<br><span style="font-size: 18px; font-weight: bold;">${data.name || data.nom}</span><br><span style="font-size: 13px; opacity: 0.85;">ID : ${memberId}</span><br><span style="font-size: 13px; font-style: italic; opacity: 0.9;">${data.titre || ""}</span>`;
+                        msgBox.innerHTML = `
+                            <span style="font-size: 18px; font-weight: bold; display: block;">${nomMembre}</span>
+                            <span style="font-size: 13px; opacity: 0.85; display: block;">ID : ${idMembre}</span>
+                            ${titreMembre}
+                            <div style="margin-top: 10px; font-weight: 600; border-top: 1px solid rgba(255,255,255,0.3); padding-top: 8px;">✓ SORTIE VALIDÉE</div>
+                        `;
                         
                         const btn = document.createElement('button');
                         btn.className = "btn btn-blue";
@@ -185,11 +197,15 @@
                         btn.onclick = () => location.href = "sortie.html";
                         actionArea.appendChild(btn);
 
-                    // [BLOC ISOLÉ] : Traitement du cas où l'enquête de satisfaction est requise avant la sortie
+                    // [BLOC ISOLÉ] : Cas 2 - Enquête de satisfaction requise avant de sortir
                     } else if (data.status === "enquete_requise") {
                         msgBox.className = "status-box warning-bg";
-                        // [INTÉGRATION] : Ajout du Nom, de l'ID et du Titre (colonne B) pour le bloc d'enquête requise
-                        msgBox.innerHTML = `⚠️ Veuillez remplir l'enquête de satisfaction avant de sortir.<br><span style="font-size: 18px; font-weight: bold;">${data.name || ""}</span><br><span style="font-size: 13px; opacity: 0.85;">ID : ${memberId}</span><br><span style="font-size: 13px; font-style: italic; opacity: 0.9;">${data.titre || ""}</span>`;
+                        msgBox.innerHTML = `
+                            <span style="font-size: 18px; font-weight: bold; display: block;">${nomMembre}</span>
+                            <span style="font-size: 13px; opacity: 0.85; display: block;">ID : ${idMembre}</span>
+                            ${titreMembre}
+                            <div style="margin-top: 10px; font-weight: 600; border-top: 1px solid rgba(255,255,255,0.3); padding-top: 8px;">⚠️ Veuillez remplir l'enquête de satisfaction avant de sortir</div>
+                        `;
 
                         if (data.redirectUrl) {
                             const btnEnquete = document.createElement('a');
@@ -207,12 +223,16 @@
                         btnScan.onclick = () => location.href = "sortie.html";
                         actionArea.appendChild(btnScan);
 
-                    // [BLOC ISOLÉ] : Traitement des autres cas (déjà sorti, non présent, etc.)
+                    // [BLOC ISOLÉ] : Cas 3 - Autres erreurs ou messages
                     } else {
                         msgBox.className = "status-box warning-bg";
-                        // [INTÉGRATION] : Affichage sécurisé incluant également le titre si disponible dans la réponse
-                        let titreHtml = data.titre ? `<br><span style="font-size: 13px; font-style: italic; opacity: 0.9;">${data.titre}</span>` : "";
-                        msgBox.innerHTML = `⚠️ ${data.message || "Erreur lors du contrôle."}${titreHtml}`;
+                        const messageErreur = data.message || "Erreur lors du contrôle.";
+                        msgBox.innerHTML = `
+                            <span style="font-size: 18px; font-weight: bold; display: block;">${nomMembre}</span>
+                            <span style="font-size: 13px; opacity: 0.85; display: block;">ID : ${idMembre}</span>
+                            ${titreMembre}
+                            <div style="margin-top: 10px; font-weight: 600; border-top: 1px solid rgba(255,255,255,0.3); padding-top: 8px;">⚠️ ${messageErreur}</div>
+                        `;
                         
                         const btn = document.createElement('button');
                         btn.className = "btn btn-blue";
@@ -222,7 +242,6 @@
                     }
                 })
                 .catch(error => {
-                    // [BLOC ISOLÉ] : Gestion des erreurs de connexion au serveur
                     msgBox.className = "status-box error-bg";
                     msgBox.innerHTML = "❌ Erreur de connexion au serveur.";
                     const btn = document.createElement('button');
@@ -236,8 +255,7 @@
 
         /**
          * ==============================================================================
-         * [BLOC JS] : Initialisation de la page au chargement (window.onload)
-         * Vérifie si un paramètre d'URL est présent ou démarre le scanner de la caméra.
+         * [BLOC JS] : Initialisation de la page au chargement
          * ==============================================================================
          */
         window.onload = function() {
