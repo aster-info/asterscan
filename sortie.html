@@ -221,10 +221,15 @@
                         btnScan.onclick = () => location.href = "sortie.html";
                         actionArea.appendChild(btnScan);
 
-                    // Cas 3 : Erreurs (déjà sorti, non présent, etc.) -> SANS DUPLICATION
+                    // Cas 3 : Erreurs (nettoyage du message serveur pour éviter la duplication)
                     } else {
                         msgBox.className = "status-box warning-bg";
-                        const messageErreur = data.message || "Erreur lors du contrôle.";
+                        let messageBrut = data.message || "Erreur lors du contrôle.";
+                        
+                        // Extraction uniquement de la dernière ligne (ex: "n'est pas présent...")
+                        const lignes = messageBrut.split('\n');
+                        const messageErreur = lignes[lignes.length - 1].trim();
+
                         msgBox.innerHTML = `${enteteMembreHtml}⚠️ ${messageErreur}</div>`;
                         
                         const btn = document.createElement('button');
