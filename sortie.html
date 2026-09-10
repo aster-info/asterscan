@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
     <!-- ======================================================== -->
-    <!-- 1. LA STRUCTURE HTML ET CONFIGURATION GÉNÉRALE  SORTIE        -->
+    <!-- 1. LA STRUCTURE HTML ET CONFIGURATION GÉNÉRALE  SORTIE         -->
     <!-- ======================================================== -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -229,16 +229,22 @@
                         btnScan.onclick = () => location.href = "sortie.html";
                         actionArea.appendChild(btnScan);
 
-                    // Cas 3 : Erreurs (Nettoyage agressif pour ne garder que la dernière phrase d'alerte)
+                    // Cas 3 : Erreurs (Nettoyage robuste pour les messages d'erreur)
                     } else {
                         msgBox.className = "status-box warning-bg";
-                        let messageBrut = data.message || "Erreur lors du contrôle.";
                         
-                        // Nettoie toutes les lignes pour ne garder que la ligne contenant l'alerte (ex: "n'est pas présent" ou "déjà sorti")
-                        let lignes = messageBrut.split('\n').map(l => l.trim()).filter(l => l !== "");
-                        let messageErreur = lignes.find(l => l.includes("n'est pas présent") || l.includes("déjà sorti") || l.includes("Erreur")) || lignes[lignes.length - 1] || "Erreur lors du contrôle.";
+                        let texteErreur = "Erreur lors du contrôle.";
+                        let rawMsg = (data.message || "").toLowerCase();
+                        
+                        if (rawMsg.includes("pas présent") || rawMsg.includes("entrée")) {
+                            texteErreur = "n'est pas présent (non enregistré à l'entrée) !";
+                        } else if (rawMsg.includes("déjà sorti")) {
+                            texteErreur = "est déjà sorti !";
+                        } else {
+                            texteErreur = data.message ? data.message.split('\n').pop() : "Action impossible.";
+                        }
 
-                        msgBox.innerHTML = `${enteteMembreHtml}⚠️ ${messageErreur}</div>`;
+                        msgBox.innerHTML = `${enteteMembreHtml}⚠️ ${texteErreur}</div>`;
                         
                         const btn = document.createElement('button');
                         btn.className = "btn btn-blue";
