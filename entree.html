@@ -142,7 +142,7 @@
          * ==============================================================================
          * [BLOC JS] : Fonction de vérification de l'ID scanné auprès du serveur Google Apps Script
          * Gère l'affichage du chargement, l'appel fetch, l'affichage de la photo du membre,
-         * et l'injection dynamique du nom, de l'ID et du titre (colonne B) selon les cas.
+         * et l'affichage dans l'ordre : Nom, ID, Titre, puis Message/Statut en dessous.
          * ==============================================================================
          */
         function verifierID(memberId) {
@@ -175,24 +175,41 @@
                         imgElem.style.display = 'none';
                     }
 
+                    // [BLOC ISOLÉ] : Préparation des variables d'affichage (Nom, Titre, ID)
+                    const nomMembre = data.name || "";
+                    const idMembre = memberId;
+                    const titreMembre = data.titre ? `<span style="font-size: 13px; font-style: italic; opacity: 0.9; display: block; margin-top: 2px;">${data.titre}</span>` : "";
+
                     // [BLOC ISOLÉ] : Cas 1 - Entrée validée avec succès
                     if (data.status === "ok") {
                         msgBox.className = "status-box success-bg";
-                        /* [INTÉGRATION] : Ajout du Nom, de l'ID et du Titre (data.titre) sous le message de succès */
-                        msgBox.innerHTML = `✓ ENTRÉE VALIDÉE<br><span style="font-size: 18px; font-weight: bold;">${data.name}</span><br><small>ID : ${memberId}</small><br><span style="font-size: 13px; font-style: italic; opacity: 0.9;">${data.titre || ""}</span>`;
+                        msgBox.innerHTML = `
+                            <span style="font-size: 18px; font-weight: bold; display: block;">${nomMembre}</span>
+                            <span style="font-size: 13px; opacity: 0.85; display: block;">ID : ${idMembre}</span>
+                            ${titreMembre}
+                            <div style="margin-top: 10px; font-weight: 600; border-top: 1px solid rgba(255,255,255,0.3); padding-top: 8px;">✓ ENTRÉE VALIDÉE</div>
+                        `;
                     
                     // [BLOC ISOLÉ] : Cas 2 - Membre déjà enregistré
                     } else if (data.status === "deja_enregistre") {
                         msgBox.className = "status-box warning-bg";
-                        /* [INTÉGRATION] : Ajout du Nom, de l'ID et du Titre (data.titre) pour le statut déjà enregistré */
-                        msgBox.innerHTML = `⚠️ DÉJÀ ENREGISTRÉ<br><span style="font-size: 18px; font-weight: bold;">${data.name}</span><br><small>Ce membre a déjà pointé son entrée.</small><br><span style="font-size: 13px; font-style: italic; opacity: 0.9;">${data.titre || ""}</span>`;
+                        msgBox.innerHTML = `
+                            <span style="font-size: 18px; font-weight: bold; display: block;">${nomMembre}</span>
+                            <span style="font-size: 13px; opacity: 0.85; display: block;">ID : ${idMembre}</span>
+                            ${titreMembre}
+                            <div style="margin-top: 10px; font-weight: 600; border-top: 1px solid rgba(255,255,255,0.3); padding-top: 8px;">⚠️ Ce membre est déjà enregistré comme présent !</div>
+                        `;
                     
                     // [BLOC ISOLÉ] : Cas 3 - Autres erreurs ou messages renvoyés par l'API
                     } else {
                         msgBox.className = "status-box warning-bg";
-                        /* [INTÉGRATION] : Affichage sécurisé incluant également le titre si disponible dans la réponse */
-                        let titreHtml = data.titre ? `<br><span style="font-size: 13px; font-style: italic; opacity: 0.9;">${data.titre}</span>` : "";
-                        msgBox.innerHTML = `⚠️ ${data.message || data.error || "Erreur lors du contrôle."}${titreHtml}`;
+                        const messageErreur = data.message || data.error || "Erreur lors du contrôle.";
+                        msgBox.innerHTML = `
+                            <span style="font-size: 18px; font-weight: bold; display: block;">${nomMembre}</span>
+                            <span style="font-size: 13px; opacity: 0.85; display: block;">ID : ${idMembre}</span>
+                            ${titreMembre}
+                            <div style="margin-top: 10px; font-weight: 600; border-top: 1px solid rgba(255,255,255,0.3); padding-top: 8px;">⚠️ ${messageErreur}</div>
+                        `;
                     }
 
                     // Bouton de réinitialisation pour scanner un autre badge
