@@ -197,7 +197,8 @@
                             <span style="font-size: 18px; font-weight: bold; display: block;">${nomMembre}</span>
                             <span style="font-size: 13px; opacity: 0.85; display: block;">ID : ${idMembre}</span>
                             ${titreMembre}
-                            <div style="margin-top: 10px; font-weight: 600; border-top: 1px solid rgba(255,255,255,0.3); padding-top: 8px;">⚠️ Ce membre est déjà enregistré comme présent !</div>
+                            <!-- [MODIFICATION] : Point d'exclamation retiré du texte d'avertissement -->
+                            <div style="margin-top: 10px; font-weight: 600; border-top: 1px solid rgba(255,255,255,0.3); padding-top: 8px;">⚠️ Ce membre est déjà enregistré comme présent</div>
                         `;
                     
                     // [BLOC ISOLÉ] : Cas 3 - Autres erreurs ou messages renvoyés par l'API
@@ -220,7 +221,7 @@
                     actionArea.appendChild(btn);
                 })
                 .catch(error => {
-                    // [BLOC ISOLÉ] : Gestion des erreurs de connexion au serveur
+                    // [BLOC ISOLÉ] : Gestion de l'erreur de connexion au serveur
                     msgBox.className = "status-box error-bg";
                     msgBox.innerHTML = "❌ Erreur de connexion au serveur.";
                     const btn = document.createElement('button');
