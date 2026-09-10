@@ -210,7 +210,9 @@
         <div class="modal" onclick="event.stopPropagation()">
             <img id="modal-photo" src="logo.png" alt="Photo" onerror="this.src='logo.png'">
             <h3 id="modal-name">Nom Membre</h3>
-            <div id="modal-id" style="font-size: 12px; color: #64748b; font-weight: 600; margin-bottom: 10px;">ID</div>
+            <div id="modal-id" style="font-size: 12px; color: #64748b; font-weight: 600;">ID</div>
+            <!-- Ajout de l'élément pour le titre -->
+            <div id="modal-titre" style="font-size: 13px; color: #4b5563; font-style: italic; margin-bottom: 10px;"></div>
             
             <div class="modal-details">
                 <p>📧 Email : <span id="modal-email" style="font-size: 13px; font-weight: 500; color: #0284c7;">--</span></p>
@@ -224,7 +226,6 @@
     </div>
 
     <script>
-        // Remplace bien cette URL par l'URL de déploiement Web active de ton script Google Apps
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwUweBhU2D-B9nFFOYF5hWe0m48oCHhGZXVK1-sqyYllMLdwGnrDzjAXi9hbY0mWotq/exec";
         let allMembers = [];
 
@@ -328,6 +329,7 @@
             document.getElementById('modal-photo').src = (m.photoUrl && m.photoUrl.startsWith('http')) ? m.photoUrl : 'logo.png';
             document.getElementById('modal-name').innerText = m.nom || "Membre";
             document.getElementById('modal-id').innerText = m.id || "";
+            document.getElementById('modal-titre').innerText = m.titre || ""; // Remplissage du titre
             document.getElementById('modal-email').innerText = m.email || "Non renseigné";
             
             document.getElementById('modal-in').innerText = m.arrivee || "--:--";
@@ -351,7 +353,6 @@
             renderList(filtered);
         }
 
-        // Chargement initial puis actualisation automatique toutes les 5 secondes
         fetchMembers();
         setInterval(fetchMembers, 5000);
     </script>
