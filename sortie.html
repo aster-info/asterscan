@@ -46,40 +46,34 @@
             overflow: hidden;
         }
         .status-box {
-            padding: 20px;
+            padding: 25px 20px;
             border-radius: 12px;
             margin-bottom: 20px;
-            font-size: 15px;
-            line-height: 1.6;
-            text-align: left;
-            border: 1px solid #e5e7eb;
-            background-color: #f9fafb;
-        }
-        .status-row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 8px;
-        }
-        .status-label {
-            color: #4b5563;
+            color: white;
             font-weight: 500;
+            font-size: 16px;
+            line-height: 1.5;
+            display: none;
         }
-        .status-value {
-            color: #1f2937;
-            font-weight: 600;
+        .success-bg {
+            background-color: #1199aa;
         }
-        .loading-text {
-            color: #6b7280;
-            font-weight: 500;
-            text-align: center;
-            padding: 10px;
+        .error-bg {
+            background-color: #ef4444; 
+        }
+        .warning-bg {
+            background-color: #f97316; 
+            color: white;
+        }
+        .loading-bg {
+            background-color: #6b7280; 
         }
         #member-photo {
             width: 100px;
             height: 100px;
             border-radius: 50%;
             object-fit: cover;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
             border: 3px solid #10b981;
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
             display: none;
@@ -111,22 +105,21 @@
         <img src="logo.png" alt="Logo ASTER" class="logo">
         <h3 id="page-title">Contrôle des Sorties</h3>
 
-        <!-- Étape 1 : Le Scanner Caméra -->
+        <!-- ============================================================================== -->
+        <!-- [BLOC HTML] : Étape 1 - Le Scanner Caméra -->
+        <!-- Contient la zone vidéo du lecteur QR code et le texte d'aide associé. -->
+        <!-- ============================================================================== -->
         <div id="scanner-container">
             <div id="reader"></div>
             <p style="font-size: 14px; color: #666;">Scannez le badge du membre pour valider la sortie</p>
         </div>
 
-        <!-- Étape 2 : Le Grand Bloc de Résultat -->
+        <!-- ============================================================================== -->
+        <!-- [BLOC HTML] : Étape 2 - Le Grand Bloc de Résultat -->
+        <!-- Affiche la photo du membre, la boîte de statut dynamique et la zone d'actions. -->
+        <!-- ============================================================================== -->
         <div id="result-container" style="display: none;">
             <img id="member-photo" src="" alt="Photo du membre">
-            
-            <!-- Nom, ID et Titre insérés ici -->
-            <div id="member-name" style="font-size: 20px; font-weight: bold; color: #1f2937; margin-bottom: 2px;"></div>
-            <div id="member-id" style="font-size: 13px; color: #6b7280; font-weight: 500;"></div>
-            <div id="member-titre" style="font-size: 13px; color: #4b5563; font-style: italic; margin-bottom: 15px;"></div>
-
-            <!-- Boîte de détails style modale -->
             <div id="message-box" class="status-box"></div>
             <div id="action-area"></div>
         </div>
@@ -143,7 +136,15 @@
             actionParam = 'sortie';
         }
 
+        /**
+         * ==============================================================================
+         * [BLOC JS] : Fonction de vérification de l'ID scanné auprès du serveur Google Apps Script
+         * Gère l'affichage du chargement, l'appel fetch, l'affichage de la photo du membre,
+         * et l'injection du nom, de l'ID et du titre dans les différents cas (succès, enquête, erreur).
+         * ==============================================================================
+         */
         function verifierID(memberId) {
+            // [BLOC ISOLÉ] : Masquage du conteneur scanner et affichage du conteneur de résultat
             document.getElementById('scanner-container').style.display = 'none';
             const resultContainer = document.getElementById('result-container');
             resultContainer.style.display = 'block';
@@ -151,20 +152,20 @@
             const imgElem = document.getElementById('member-photo');
             imgElem.style.display = 'none';
 
-            document.getElementById('member-name').innerText = "Vérification...";
-            document.getElementById('member-id').innerText = "ID : " + memberId;
-            document.getElementById('member-titre').innerText = "";
-
+            // [BLOC ISOLÉ] : État de chargement initial dans la boîte de message
             const msgBox = document.getElementById('message-box');
-            msgBox.className = "status-box loading-text";
-            msgBox.innerHTML = "Vérification en cours avec le serveur...";
+            msgBox.className = "status-box loading-bg";
+            msgBox.style.display = "block";
+            msgBox.innerHTML = "Vérification en cours...";
 
+            // Requête vers l'API Google Apps Script
             fetch(`${scriptUrl}?code=${encodeURIComponent(memberId)}&action=${actionParam}`)
                 .then(response => response.json())
                 .then(data => {
                     const actionArea = document.getElementById('action-area');
                     actionArea.innerHTML = '';
 
+                    // [BLOC ISOLÉ] : Gestion de l'affichage de la photo du membre si elle existe
                     if (data.photo && data.photo.trim() !== "") {
                         imgElem.src = data.photo;
                         imgElem.style.display = 'inline-block';
@@ -172,20 +173,11 @@
                         imgElem.style.display = 'none';
                     }
 
-                    // Injection des données reçues du serveur
-                    document.getElementById('member-name').innerText = data.name || data.nom || "Inconnu";
-                    document.getElementById('member-id').innerText = "ID : " + memberId;
-                    document.getElementById('member-titre').innerText = data.titre || "";
-
-                    msgBox.className = "status-box";
-
+                    // [BLOC ISOLÉ] : Traitement du cas où la sortie est validée avec succès
                     if (data.status === "ok" || data.status === "success") {
-                        msgBox.innerHTML = `
-                            <div class="status-row"><span class="status-label">✉️ Email :</span> <span class="status-value">${data.email || "Non renseigné"}</span></div>
-                            <div class="status-row"><span class="status-label">📥 Arrivée :</span> <span class="status-value">${data.arrivee || "--:--"}</span></div>
-                            <div class="status-row"><span class="status-label">📤 Départ :</span> <span class="status-value">${data.depart || "--:--"}</span></div>
-                            <div class="status-row"><span class="status-label">📌 Statut :</span> <span class="status-value" style="color: #10b981;">Sortie Validée</span></div>
-                        `;
+                        msgBox.className = "status-box success-bg";
+                        // [INTÉGRATION] : Ajout du Nom, de l'ID et du Titre (colonne B) sous le message de succès
+                        msgBox.innerHTML = `✓ SORTIE VALIDÉE<br><span style="font-size: 18px; font-weight: bold;">${data.name || data.nom}</span><br><span style="font-size: 13px; opacity: 0.85;">ID : ${memberId}</span><br><span style="font-size: 13px; font-style: italic; opacity: 0.9;">${data.titre || ""}</span>`;
                         
                         const btn = document.createElement('button');
                         btn.className = "btn btn-blue";
@@ -193,13 +185,11 @@
                         btn.onclick = () => location.href = "sortie.html";
                         actionArea.appendChild(btn);
 
+                    // [BLOC ISOLÉ] : Traitement du cas où l'enquête de satisfaction est requise avant la sortie
                     } else if (data.status === "enquete_requise") {
-                        msgBox.innerHTML = `
-                            <div style="color: #d97706; font-weight: bold; margin-bottom: 10px;">⚠️ Enquête de satisfaction requise avant la sortie.</div>
-                            <div class="status-row"><span class="status-label">✉️ Email :</span> <span class="status-value">${data.email || "Non renseigné"}</span></div>
-                            <div class="status-row"><span class="status-label">📥 Arrivée :</span> <span class="status-value">${data.arrivee || "--:--"}</span></div>
-                            <div class="status-row"><span class="status-label">📤 Départ :</span> <span class="status-value">Bloqué</span></div>
-                        `;
+                        msgBox.className = "status-box warning-bg";
+                        // [INTÉGRATION] : Ajout du Nom, de l'ID et du Titre (colonne B) pour le bloc d'enquête requise
+                        msgBox.innerHTML = `⚠️ Veuillez remplir l'enquête de satisfaction avant de sortir.<br><span style="font-size: 18px; font-weight: bold;">${data.name || ""}</span><br><span style="font-size: 13px; opacity: 0.85;">ID : ${memberId}</span><br><span style="font-size: 13px; font-style: italic; opacity: 0.9;">${data.titre || ""}</span>`;
 
                         if (data.redirectUrl) {
                             const btnEnquete = document.createElement('a');
@@ -217,24 +207,24 @@
                         btnScan.onclick = () => location.href = "sortie.html";
                         actionArea.appendChild(btnScan);
 
+                    // [BLOC ISOLÉ] : Traitement des autres cas (déjà sorti, non présent, etc.)
                     } else {
-                        msgBox.innerHTML = `
-                            <div style="color: #ef4444; font-weight: bold; margin-bottom: 10px;">⚠️ ${data.message || "Erreur lors du contrôle."}</div>
-                            <div class="status-row"><span class="status-label">✉️ Email :</span> <span class="status-value">${data.email || "Non renseigné"}</span></div>
-                            <div class="status-row"><span class="status-label">📥 Arrivée :</span> <span class="status-value">${data.arrivee || "--:--"}</span></div>
-                            <div class="status-row"><span class="status-label">📤 Départ :</span> <span class="status-value">${data.depart || "--:--"}</span></div>
-                        `;
+                        msgBox.className = "status-box warning-bg";
+                        // [INTÉGRATION] : Affichage sécurisé incluant également le titre si disponible dans la réponse
+                        let titreHtml = data.titre ? `<br><span style="font-size: 13px; font-style: italic; opacity: 0.9;">${data.titre}</span>` : "";
+                        msgBox.innerHTML = `⚠️ ${data.message || "Erreur lors du contrôle."}${titreHtml}`;
                         
                         const btn = document.createElement('button');
                         btn.className = "btn btn-blue";
                         btn.innerText = "Scanner un autre";
                         btn.onclick = () => location.href = "sortie.html";
-                        actionArea.appendChild(btn);
+                        actionArea.appendChild(btn).focus();
                     }
                 })
                 .catch(error => {
-                    msgBox.className = "status-box";
-                    msgBox.innerHTML = "<div style='color: #ef4444; text-align: center;'>❌ Erreur de connexion au serveur.</div>";
+                    // [BLOC ISOLÉ] : Gestion des erreurs de connexion au serveur
+                    msgBox.className = "status-box error-bg";
+                    msgBox.innerHTML = "❌ Erreur de connexion au serveur.";
                     const btn = document.createElement('button');
                     btn.className = "btn btn-blue";
                     btn.innerText = "Réessayer";
@@ -244,6 +234,12 @@
                 });
         }
 
+        /**
+         * ==============================================================================
+         * [BLOC JS] : Initialisation de la page au chargement (window.onload)
+         * Vérifie si un paramètre d'URL est présent ou démarre le scanner de la caméra.
+         * ==============================================================================
+         */
         window.onload = function() {
             const urlParams = new URLSearchParams(window.location.search);
             const memberId = urlParams.get('id') || urlParams.get('code');
