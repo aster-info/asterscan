@@ -208,8 +208,21 @@
                             btnEnquete.className = "btn btn-blue";
                             btnEnquete.innerText = "Remplir l'enquête";
                             btnEnquete.onclick = () => {
+                                // Ouvre l'enquête dans un nouvel onglet
                                 window.open(data.redirectUrl, '_blank');
-                                location.href = "sortie.html";
+                                
+                                // Ferme complètement la page / tente de fermer la fenêtre
+                                window.close();
+                                
+                                // Message de secours si le navigateur bloque window.close()
+                                setTimeout(() => {
+                                    document.body.innerHTML = `
+                                        <div class="card" style="margin: auto;">
+                                            <h3 style="color: #2c3e50;">Enquête ouverte</h3>
+                                            <p style="color: #555; font-size: 15px;">L'enquête a bien été ouverte dans un nouvel onglet.<br>Vous pouvez fermer cette fenêtre.</p>
+                                        </div>
+                                    `;
+                                }, 200);
                             };
                             actionArea.appendChild(btnEnquete);
                         }
