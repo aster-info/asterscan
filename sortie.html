@@ -208,13 +208,8 @@
                             btnEnquete.className = "btn btn-blue";
                             btnEnquete.innerText = "Remplir l'enquête";
                             btnEnquete.onclick = () => {
-                                // Ouvre l'enquête dans un nouvel onglet
                                 window.open(data.redirectUrl, '_blank');
-                                
-                                // Ferme complètement la page / tente de fermer la fenêtre
                                 window.close();
-                                
-                                // Message de secours si le navigateur bloque window.close()
                                 setTimeout(() => {
                                     document.body.innerHTML = `
                                         <div class="card" style="margin: auto;">
@@ -234,14 +229,14 @@
                         btnScan.onclick = () => location.href = "sortie.html";
                         actionArea.appendChild(btnScan);
 
-                    // Cas 3 : Erreurs (nettoyage du message serveur pour éviter la duplication)
+                    // Cas 3 : Erreurs (Nettoyage agressif pour ne garder que la dernière phrase d'alerte)
                     } else {
                         msgBox.className = "status-box warning-bg";
                         let messageBrut = data.message || "Erreur lors du contrôle.";
                         
-                        // Extraction uniquement de la dernière ligne (ex: "n'est pas présent...")
-                        const lignes = messageBrut.split('\n');
-                        const messageErreur = lignes[lignes.length - 1].trim();
+                        // Nettoie toutes les lignes pour ne garder que la ligne contenant l'alerte (ex: "n'est pas présent" ou "déjà sorti")
+                        let lignes = messageBrut.split('\n').map(l => l.trim()).filter(l => l !== "");
+                        let messageErreur = lignes.find(l => l.includes("n'est pas présent") || l.includes("déjà sorti") || l.includes("Erreur")) || lignes[lignes.length - 1] || "Erreur lors du contrôle.";
 
                         msgBox.innerHTML = `${enteteMembreHtml}⚠️ ${messageErreur}</div>`;
                         
