@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
     <!-- ======================================================== -->
-    <!-- 1. LA STRUCTURE HTML ET CONFIGURATION GÉNÉRALE  SORTIE       -->
+    <!-- 1. LA STRUCTURE HTML ET CONFIGURATION GÉNÉRALE  SORTIE        -->
     <!-- ======================================================== -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -208,11 +208,14 @@
                         `;
 
                         if (data.redirectUrl) {
-                            const btnEnquete = document.createElement('a');
+                            const btnEnquete = document.createElement('button');
                             btnEnquete.className = "btn btn-blue";
                             btnEnquete.innerText = "Remplir l'enquête";
-                            btnEnquete.href = data.redirectUrl;
-                            btnEnquete.target = "_blank";
+                            // Ouvre le formulaire dans un nouvel onglet ET réinitialise la page de sortie pour le prochain scan
+                            btnEnquete.onclick = () => {
+                                window.open(data.redirectUrl, '_blank');
+                                location.href = "sortie.html";
+                            };
                             actionArea.appendChild(btnEnquete);
                         }
 
