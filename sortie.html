@@ -121,7 +121,7 @@
         <div id="result-container" style="display: none;">
             <img id="member-photo" src="" alt="Photo du membre">
             
-            <!-- Nom et ID avec intégration du Titre -->
+            <!-- Nom, ID et Titre insérés ici -->
             <div id="member-name" style="font-size: 20px; font-weight: bold; color: #1f2937; margin-bottom: 2px;"></div>
             <div id="member-id" style="font-size: 13px; color: #6b7280; font-weight: 500;"></div>
             <div id="member-titre" style="font-size: 13px; color: #4b5563; font-style: italic; margin-bottom: 15px;"></div>
@@ -165,7 +165,6 @@
                     const actionArea = document.getElementById('action-area');
                     actionArea.innerHTML = '';
 
-                    // Affichage de la photo si disponible
                     if (data.photo && data.photo.trim() !== "") {
                         imgElem.src = data.photo;
                         imgElem.style.display = 'inline-block';
@@ -173,7 +172,7 @@
                         imgElem.style.display = 'none';
                     }
 
-                    // Injection du Nom, de l'ID et du Titre aux bons endroits
+                    // Injection des données reçues du serveur
                     document.getElementById('member-name').innerText = data.name || data.nom || "Inconnu";
                     document.getElementById('member-id').innerText = "ID : " + memberId;
                     document.getElementById('member-titre').innerText = data.titre || "";
@@ -219,7 +218,6 @@
                         actionArea.appendChild(btnScan);
 
                     } else {
-                        // Cas d'erreur ou déjà sorti / non présent
                         msgBox.innerHTML = `
                             <div style="color: #ef4444; font-weight: bold; margin-bottom: 10px;">⚠️ ${data.message || "Erreur lors du contrôle."}</div>
                             <div class="status-row"><span class="status-label">✉️ Email :</span> <span class="status-value">${data.email || "Non renseigné"}</span></div>
