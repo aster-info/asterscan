@@ -56,7 +56,7 @@
             display: none;
         }
         .success-bg {
-            background-color: #1199aa; /* Bleu cyan exact de la maquette */
+            background-color: #1199aa;
         }
         .error-bg {
             background-color: #ef4444; 
@@ -68,7 +68,6 @@
         .loading-bg {
             background-color: #6b7280; 
         }
-        /* Style exact pour la photo ronde avec bordure verte et ombre */
         #member-photo {
             width: 100px;
             height: 100px;
@@ -112,7 +111,7 @@
             <p style="font-size: 14px; color: #666;">Scannez le badge du membre pour valider la sortie</p>
         </div>
 
-        <!-- Étape 2 : Le Grand Bloc de Résultat (Contient la photo et le message) -->
+        <!-- Étape 2 : Le Grand Bloc de Résultat -->
         <div id="result-container" style="display: none;">
             <img id="member-photo" src="" alt="Photo du membre">
             <div id="message-box" class="status-box"></div>
@@ -122,9 +121,8 @@
 
     <script>
         let html5QrCode;
-        //const scriptUrl = "https://script.google.com/macros/s/AKfycbxr2945zVbehDI2yAH2YgSsHA2BOCM8r3whjyL2zFYuMOrJjhIm7e_9NWNkc0QARwQ/exec";
         const scriptUrl = "https://script.google.com/macros/s/AKfycbwUweBhU2D-B9nFFOYF5hWe0m48oCHhGZXVK1-sqyYllMLdwGnrDzjAXi9hbY0mWotq/exec";
-        // Forçage de l'action à "sortie" pour que le script Google Apps traite bien la sortie
+        
         const urlParamsGlobal = new URLSearchParams(window.location.search);
         let actionParam = urlParamsGlobal.get('action');
 
@@ -145,14 +143,12 @@
             msgBox.style.display = "block";
             msgBox.innerHTML = "Vérification en cours...";
 
-            // Appel de l'API avec action=sortie
             fetch(`${scriptUrl}?code=${encodeURIComponent(memberId)}&action=${actionParam}`)
                 .then(response => response.json())
                 .then(data => {
                     const actionArea = document.getElementById('action-area');
                     actionArea.innerHTML = '';
 
-                    // Gestion de la photo avec la propriété "data.photo"
                     if (data.photo && data.photo.trim() !== "") {
                         imgElem.src = data.photo;
                         imgElem.style.display = 'inline-block';
@@ -160,12 +156,10 @@
                         imgElem.style.display = 'none';
                     }
 
-                    // Validation selon les différents statuts renvoyés par Apps Script
                     if (data.status === "ok" || data.status === "success") {
                         msgBox.className = "status-box success-bg";
                         msgBox.innerHTML = `✓ SORTIE VALIDÉE<br><span style="font-size: 18px; font-weight: bold;">${data.name || data.nom}</span><br><small>ID : ${memberId}</small>`;
                         
-                        // Bouton standard pour continuer
                         const btn = document.createElement('button');
                         btn.className = "btn btn-blue";
                         btn.innerText = "Scanner un autre";
@@ -173,24 +167,22 @@
                         actionArea.appendChild(btn);
 
                     } else if (data.status === "enquete_requise") {
-                        // Cas où l'enquête n'est pas remplie (Alerte orange + Bouton redirection formulaire)
                         msgBox.className = "status-box warning-bg";
                         msgBox.innerHTML = `⚠️ Veuillez remplir l'enquête de satisfaction avant de sortir.<br><span style="font-size: 18px; font-weight: bold;">${data.name || ""}</span>`;
 
-                        // Bouton de redirection vers l'enquête pré-remillie
-                        if (data.formUrl) {
+                        // CORRECTION ICI : Utilisation de data.redirectUrl au lieu de data.formUrl
+                        if (data.redirectUrl) {
                             const btnEnquete = document.createElement('a');
                             btnEnquete.className = "btn btn-blue";
                             btnEnquete.innerText = "Remplir l'enquête";
-                            btnEnquete.href = data.formUrl;
-                            btnEnquete.target = "_blank"; // Ouvre dans un nouvel onglet ou directement
+                            btnEnquete.href = data.redirectUrl;
+                            btnEnquete.target = "_blank";
                             actionArea.appendChild(btnEnquete);
                         }
 
-                        // Bouton pour scanner un autre membre
                         const btnScan = document.createElement('button');
                         btnScan.className = "btn btn-blue";
-                        btnScan.style.backgroundColor = "#6c757d"; // Optionnel : couleur différente pour différencier
+                        btnScan.style.backgroundColor = "#6c757d"; 
                         btnScan.innerText = "Scanner un autre";
                         btnScan.onclick = () => location.href = "sortie.html";
                         actionArea.appendChild(btnScan);
