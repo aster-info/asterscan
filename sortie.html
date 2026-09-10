@@ -3,242 +3,153 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Contrôle des Sorties - ASTER</title>
+    <title>Scanner - Sortie</title>
+    <!-- Inclusion de la bibliothèque html5-qrcode pour la lecture de QR codes par la caméra -->
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #f4f4f9;
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            box-sizing: border-box;
-        }
-        .card {
-            background: white;
-            padding: 30px 25px;
-            border-radius: 16px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
-            text-align: center;
-            max-width: 500px;
-            width: 100%;
-        }
-        .logo {
-            max-width: 130px;
-            height: auto;
-            margin-bottom: 15px;
-        }
-        h3 {
-            color: #2c3e50;
-            margin-top: 0;
-            margin-bottom: 20px;
-            font-size: 22px;
-            font-weight: 700;
-        }
-        #reader {
-            width: 100%;
-            max-width: 400px;
-            margin: 0 auto 15px auto;
-            border-radius: 12px;
-            overflow: hidden;
-        }
-        .status-box {
-            padding: 25px 20px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            color: white;
-            font-weight: 500;
-            font-size: 16px;
-            line-height: 1.5;
-            display: none;
-        }
-        .success-bg {
-            background-color: #1199aa;
-        }
-        .error-bg {
-            background-color: #ef4444; 
-        }
-        .warning-bg {
-            background-color: #f97316; 
-            color: white;
-        }
-        .loading-bg {
-            background-color: #6b7280; 
-        }
-        #member-photo {
-            width: 100px;
-            height: 100px;
-            border-radius: 50%;
-            object-fit: cover;
-            margin-bottom: 20px;
-            border: 3px solid #10b981;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-            display: none;
-        }
-        .btn {
-            display: inline-block;
-            padding: 12px 24px;
-            font-size: 15px;
-            font-weight: 600;
-            text-decoration: none;
-            border-radius: 8px;
-            border: none;
-            cursor: pointer;
-            color: white;
-            margin-top: 5px;
-            margin-right: 5px;
-        }
-        .btn-blue {
-            background-color: #007bff;
-        }
-        .btn-blue:hover {
-            background-color: #0056b3;
-        }
+        body { font-family: Arial, sans-serif; text-align: center; margin: 0; padding: 20px; background-color: #f4f4f9; }
+        #reader { width: 100%; max-width: 400px; margin: auto; border-radius: 8px; overflow: hidden; }
+        .status-box { margin-top: 20px; padding: 15px; border-radius: 8px; font-size: 16px; display: inline-block; width: 80%; max-width: 400px; }
+        .success-bg { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error-bg { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
     </style>
 </head>
 <body>
 
-    <div class="card">
-        <img src="logo.png" alt="Logo ASTER" class="logo">
-        <h3 id="page-title">Contrôle des Sorties</h3>
+    <h1>Scan de Sortie</h1>
+    
+    <!-- ============================================================================== -->
+    <!-- [BLOC HTML] : Zone de la caméra pour le scan du QR Code -->
+    <!-- ============================================================================== -->
+    <div id="reader"></div>
 
-        <!-- Étape 1 : Le Scanner Caméra -->
-        <div id="scanner-container">
-            <div id="reader"></div>
-            <p style="font-size: 14px; color: #666;">Scannez le badge du membre pour valider la sortie</p>
-        </div>
-
-        <!-- Étape 2 : Le Grand Bloc de Résultat -->
-        <div id="result-container" style="display: none;">
-            <img id="member-photo" src="" alt="Photo du membre">
-            <div id="message-box" class="status-box"></div>
-            <div id="action-area"></div>
-        </div>
-    </div>
+    <!-- ============================================================================== -->
+    <!-- [BLOC HTML] : Boîte de message / modale pour afficher le résultat du scan -->
+    <!-- ============================================================================== -->
+    <div id="result" class="status-box" style="display: none;"></div>
 
     <script>
-        let html5QrCode;
-        const scriptUrl = "https://script.google.com/macros/s/AKfycbwUweBhU2D-B9nFFOYF5hWe0m48oCHhGZXVK1-sqyYllMLdwGnrDzjAXi9hbY0mWotq/exec";
-        
-        const urlParamsGlobal = new URLSearchParams(window.location.search);
-        let actionParam = urlParamsGlobal.get('action');
-
-        if (window.location.pathname.includes('sortie') || !actionParam) {
-            actionParam = 'sortie';
+        /**
+         * ==============================================================================
+         * [BLOC JS] : Fonction de traitement du succès du scan QR Code
+         * Appelée automatiquement dès qu'un code est détecté par la caméra.
+         * ==============================================================================
+         */
+        function onScanSuccess(decodedText, decodedResult) {
+            // Arrêt temporaire du scan pour éviter les lectures multiples en rafale
+            html5QrcodeScanner.clear().then(_ => {
+                console.log("Scanner arrêté suite au scan de : " + decodedText);
+                envoyerScanAuServeur(decodedText);
+            }).catch(error => {
+                console.error("Erreur lors de l'arrêt du scanner : ", error);
+                envoyerScanAuServeur(decodedText);
+            });
         }
 
-        function verifierID(memberId) {
-            document.getElementById('scanner-container').style.display = 'none';
-            const resultContainer = document.getElementById('result-container');
-            resultContainer.style.display = 'block';
-            
-            const imgElem = document.getElementById('member-photo');
-            imgElem.style.display = 'none';
+        /**
+         * ==============================================================================
+         * [BLOC JS] : Envoi des données du code scanné vers le script Google Apps Script
+         * Effectue une requête fetch vers l'API avec l'action "sortie".
+         * ==============================================================================
+         */
+        function envoyerScanAuServeur(codeMembre) {
+            // URL de ton Web App Google Apps Script (à remplacer par ton URL exacte si besoin)
+            const urlAppScript = "TON_URL_GOOGLE_APPS_SCRIPT_ICI?action=sortie&code=" + encodeURIComponent(codeMembre);
 
-            const msgBox = document.getElementById('message-box');
-            msgBox.className = "status-box loading-bg";
-            msgBox.style.display = "block";
-            msgBox.innerHTML = "Vérification en cours...";
-
-            fetch(`${scriptUrl}?code=${encodeURIComponent(memberId)}&action=${actionParam}`)
+            fetch(urlAppScript)
                 .then(response => response.json())
                 .then(data => {
-                    const actionArea = document.getElementById('action-area');
-                    actionArea.innerHTML = '';
-
-                    if (data.photo && data.photo.trim() !== "") {
-                        imgElem.src = data.photo;
-                        imgElem.style.display = 'inline-block';
-                    } else {
-                        imgElem.style.display = 'none';
-                    }
-
-                    if (data.status === "ok" || data.status === "success") {
-                        msgBox.className = "status-box success-bg";
-                        // [INTÉGRATION ID] : Ajout de l'ID en texte plus petit sous le nom pour la validation standard
-                        msgBox.innerHTML = `✓ SORTIE VALIDÉE<br><span style="font-size: 18px; font-weight: bold;">${data.name || data.nom}</span><br><span style="font-size: 13px; opacity: 0.85;">ID : ${memberId}</span>`;
-                        
-                        const btn = document.createElement('button');
-                        btn.className = "btn btn-blue";
-                        btn.innerText = "Scanner un autre";
-                        btn.onclick = () => location.href = "sortie.html";
-                        actionArea.appendChild(btn);
-
-                    } else if (data.status === "enquete_requise") {
-                        msgBox.className = "status-box warning-bg";
-                        // [INTÉGRATION ID] : Ajout de l'ID en texte plus petit sous le nom pour le cas de l'enquête requise
-                        msgBox.innerHTML = `⚠️ Veuillez remplir l'enquête de satisfaction avant de sortir.<br><span style="font-size: 18px; font-weight: bold;">${data.name || ""}</span><br><span style="font-size: 13px; opacity: 0.85;">ID : ${memberId}</span>`;
-
-                        if (data.redirectUrl) {
-                            const btnEnquete = document.createElement('a');
-                            btnEnquete.className = "btn btn-blue";
-                            btnEnquete.innerText = "Remplir l'enquête";
-                            btnEnquete.href = data.redirectUrl;
-                            btnEnquete.target = "_blank";
-                            actionArea.appendChild(btnEnquete);
-                        }
-
-                        const btnScan = document.createElement('button');
-                        btnScan.className = "btn btn-blue";
-                        btnScan.style.backgroundColor = "#6c757d"; 
-                        btnScan.innerText = "Scanner un autre";
-                        btnScan.onclick = () => location.href = "sortie.html";
-                        actionArea.appendChild(btnScan);
-
-                    } else {
-                        msgBox.className = "status-box warning-bg";
-                        msgBox.innerHTML = `⚠️ ${data.message || "Erreur lors du contrôle."}`;
-                        
-                        const btn = document.createElement('button');
-                        btn.className = "btn btn-blue";
-                        btn.innerText = "Scanner un autre";
-                        btn.onclick = () => location.href = "sortie.html";
-                        actionArea.appendChild(btn);
-                    }
+                    afficherResultatModale(data, codeMembre);
                 })
                 .catch(error => {
-                    msgBox.className = "status-box error-bg";
-                    msgBox.innerHTML = "❌ Erreur de connexion au serveur.";
-                    const btn = document.createElement('button');
-                    btn.className = "btn btn-blue";
-                    btn.innerText = "Réessayer";
-                    btn.onclick = () => location.href = "sortie.html";
-                    actionArea.appendChild(btn);
-                    console.error('Erreur:', error);
+                    console.error('Erreur réseau :', error);
+                    afficherErreurReseau();
                 });
         }
 
-        window.onload = function() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const memberId = urlParams.get('id') || urlParams.get('code');
+        /**
+         * ==============================================================================
+         * [BLOC JS] : Affichage dynamique du résultat dans la boîte modale/status
+         * Intègre le Nom, l'ID, le Titre récupéré et l'état de sortie.
+         * ==============================================================================
+         */
+        function afficherResultatModale(data, memberId) {
+            const resultBox = document.getElementById('result');
+            resultBox.style.display = "inline-block";
 
-            if (memberId) {
-                verifierID(memberId.trim());
+            // Vérification du statut renvoyé par le script (succès, déjà sorti, ou enquête requise)
+            if (data.status === "ok" || data.status === "success") {
+                resultBox.className = "status-box success-bg";
+                resultBox.innerHTML = `
+                    ✓ SORTIE VALIDÉE<br><br>
+                    <span style="font-size: 18px; font-weight: bold;">${data.name || "Inconnu"}</span><br>
+                    <span style="font-size: 13px; opacity: 0.85;">ID : ${memberId}</span><br>
+                    <span style="font-size: 13px; font-style: italic; opacity: 0.9;">${data.titre || ""}</span><br><br>
+                    <span style="font-size: 12px;">Départ : ${data.depart}</span>
+                `;
+            } else if (data.status === "enquete_requise") {
+                // Bloc spécifique si l'enquête de satisfaction n'est pas remplie
+                resultBox.className = "status-box error-bg";
+                resultBox.innerHTML = `
+                    ⚠ ENQUÊTE REQUISE<br><br>
+                    <span style="font-size: 16px; font-weight: bold;">${data.name || "Inconnu"}</span><br>
+                    <span style="font-size: 13px; font-style: italic;">${data.titre || ""}</span><br><br>
+                    ${data.message}
+                `;
             } else {
-                html5QrCode = new Html5Qrcode("reader");
-                html5QrCode.start(
-                    { facingMode: "environment" },
-                    { fps: 10, qrbox: 250 },
-                    (decodedText) => {
-                        html5QrCode.stop().then(() => {
-                            let cleanId = decodedText;
-                            try {
-                                if (decodedText.includes('?')) {
-                                    const urlObj = new URL(decodedText);
-                                    cleanId = urlObj.searchParams.get('id') || urlObj.searchParams.get('code') || decodedText;
-                                }
-                            } catch (e) {}
-                            verifierID(cleanId.trim());
-                        });
-                    }
-                ).catch(err => {
-                    console.error("Erreur caméra : " + err);
-                });
+                // Cas d'erreur standard ou déjà sorti
+                resultBox.className = "status-box error-bg";
+                resultBox.innerHTML = `
+                    ⚠ ATTENTION<br><br>
+                    <span style="font-size: 16px; font-weight: bold;">${data.name || "Inconnu"}</span><br>
+                    <span style="font-size: 13px; font-style: italic;">${data.titre || ""}</span><br><br>
+                    ${data.message}
+                `;
             }
-        };
+
+            // Relancer le scanner automatiquement après quelques secondes pour le membre suivant
+            setTimeout(() => {
+                resultBox.style.display = "none";
+                relancerScanner();
+            }, 6000); // Laisse affiché pendant 6 secondes pour laisser le temps de lire ou cliquer sur l'enquête
+        }
+
+        /**
+         * ==============================================================================
+         * [BLOC JS] : Gestion des erreurs réseau
+         * ==============================================================================
+         */
+        function afficherErreurReseau() {
+            const resultBox = document.getElementById('result');
+            resultBox.style.display = "inline-block";
+            resultBox.className = "status-box error-bg";
+            resultBox.innerText = "Erreur de connexion avec le serveur.";
+            
+            setTimeout(() => {
+                resultBox.style.display = "none";
+                relancerScanner();
+            }, 4000);
+        }
+
+        /**
+         * ==============================================================================
+         * [BLOC JS] : Initialisation et réinitialisation du lecteur de QR Code
+         * ==============================================================================
+         */
+        let html5QrcodeScanner;
+
+        function relancerScanner() {
+            html5QrcodeScanner = new Html5QrcodeScanner(
+                "reader", { fps: 10, qrbox: 250 }, false);
+            html5QrcodeScanner.render(onScanSuccess, (error) => {
+                // Erreurs de scan en direct ignorées (normales tant qu'aucun QR code n'est dans le champ)
+            });
+        }
+
+        // Démarrage initial de la caméra au chargement de la page
+        document.addEventListener('DOMContentLoaded', (event) => {
+            relancerScanner();
+        });
     </script>
 </body>
 </html>
